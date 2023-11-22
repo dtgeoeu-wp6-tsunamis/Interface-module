@@ -27,6 +27,6 @@ Arguments that need/can to be provided:
   * donor_output                       name of the output file from the donor model
   * bathy_file                             name of the bathymetry file. Domain has to be larger compared to the domain from the donor model
   * resolution                             spatial resolution for the interpolation (will be used for both x- and y-coordinates)
-  *--receiver receiver_model     (optional) receiver model (as of now, only hysea is available)
+  * --receiver receiver_model     (optional) receiver model (as of now, only hysea is available)
   * --filter filter                          (optional) filter for the uplift data where filter = none, kajiura; default: none
   * --casename casename        (optional) string to append the filename with 
