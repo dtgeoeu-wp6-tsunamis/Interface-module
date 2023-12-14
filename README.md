@@ -12,8 +12,8 @@ Input was provided by:
   * Alex González (UMA)
   * Alexis Marboeuf (IPGP)
 
-Versions: 
-0.1 (10/23) M. Bänsch (UHAM)
+Version: 
+0.2 (12/23) M. Bänsch (UHAM)
 
 ## Instructions for this module
 

@@ -83,7 +83,7 @@ def interpolateSeissol2structured(sx, dx, coord_min, coord_max, include_horizont
   :param include_horizontal: handle whether to interpolate only the vertical component or not
   :param instants: time steps to include in the out netCDF. If not provided, all time steps will be included
   
-  returns uplift data and coordinates
+  returns deformation data and coordinates
   """
   unstrGrid3d = sx.generateVtkObject()
 
@@ -172,10 +172,10 @@ def interpolateSeissol2structured(sx, dx, coord_min, coord_max, include_horizont
 
 def get_seissol(filename, spatial_resolution, include_horizontal):
   """
-  Actual part that will be used by the main donor model functionality to get the uplift data
+  Actual part that will be used by the main donor model functionality to get the deformation data
   :param filename: filename for the SeisSol data (has to be an XDMF file)
   :param spatial_resolution: spatial_resolution in meters
-  :param include_horizontal: boolean handle whether the output will only contain the vertical deformation (uplift) or also include the horizontal deformation
+  :param include_horizontal: boolean handle whether the output will only contain the vertical deformation (deformation) or also include the horizontal deformation
   """
 
   sx = seissolxdmfExtended(filename) # get seissolxdmf from provided XDMF file
@@ -184,6 +184,6 @@ def get_seissol(filename, spatial_resolution, include_horizontal):
   coordinate_min = np.round(geom.min(0) +  spatial_resolution, -4) 
   coordinate_max = np.round(geom.max(0) -  spatial_resolution, -4) 
 
-  donor_uplift, donor_x, donor_y = interpolateSeissol2structured(sx, spatial_resolution, coordinate_min, coordinate_max, include_horizontal)
+  donor_deformation, donor_x, donor_y = interpolateSeissol2structured(sx, spatial_resolution, coordinate_min, coordinate_max, include_horizontal)
 
-  return donor_uplift, donor_x, donor_y
+  return donor_deformation, donor_x, donor_y

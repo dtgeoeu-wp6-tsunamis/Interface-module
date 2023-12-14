@@ -15,6 +15,7 @@ Input was provided by:
 
 Versions: 
 0.1 (10/23) M. Bänsch (UHAM)
+0.2 (12/23) M. Bänsch (UHAM)
 
 *** Instructions for this module ***
 
@@ -28,10 +29,9 @@ Arguments that need/can to be provided:
   * donor_output                       name of the output file from the donor model
   * bathy_file                             name of the bathymetry file. Domain has to be larger compared to the domain from the donor model
   * resolution                             spatial resolution for the interpolation (will be used for both x- and y-coordinates)
-  *--receiver receiver_model     (optional) receiver model (as of now, only hysea is available)
-  * --filter filter                          (optional) filter for the uplift data where filter = none, kajiura; default: none
+  * --receiver receiver_model     (optional) receiver model (as of now, only hysea is available)
+  * --filter filter                          (optional) filter for the deformation data where filter = none, kajiura; default: none
   * --casename casename        (optional) string to append the filename with 
-
 
 
 """
@@ -45,6 +45,7 @@ import exchangeGrid.interpolateBathy as interpolateBathy
 import exchangeGrid.filter as filtering
 import receiverModel.writeInterpolatedBathy as writeBathy
 import receiverModel.writeUplift as writeUplift
+import numpy as np
 
 # Define arguments the script has to be called with
 parser = argparse.ArgumentParser(
@@ -69,7 +70,7 @@ parser.add_argument("--include_horizontal_deformation",
     help="spatial resolution for the interpolation (will be used for both x- and y-coordinates)", 
     default=False)
 parser.add_argument("--filter", 
-    help="filter for the uplift data where filter = none, kajiura; default: none",
+    help="filter for the deformation data where filter = none, kajiura; default: none",
     default='none')
 parser.add_argument("--casename", 
     help="string to append the filename with",
@@ -92,7 +93,7 @@ print("************************************")
 
 start = time.time()
 
-donor_uplift, donor_x, donor_y = donorInterface.get_donorModel(args.donor[0], args.donor_output, spatial_resolution, incl_horizontal)
+donor_deformation, donor_x, donor_y = donorInterface.get_donorModel(args.donor[0], args.donor_output, spatial_resolution, incl_horizontal)
 
 stop = time.time()
 print()
@@ -101,7 +102,7 @@ print("************************************")
 print()
 
 """
-Stage 2: interpolate bathymetry data to same grid as the uplift. Filter the uplift if desired.
+Stage 2: interpolate bathymetry data to same grid as the deformation. Filter the deformation if desired.
 """
 
 print("Entering Stage 2: processing the data.")
@@ -110,8 +111,8 @@ print("************************************")
 
 start = time.time()
 
-interpolated_bathymetry = interpolateBathy.get_interpolatedBathy(args.bathy_file, donor_x, donor_y)
-eg_uplift = filtering.filter_uplift(filtername, donor_uplift, interpolated_bathymetry, spatial_resolution)
+interpolated_bathymetry = interpolateBathy.get_interpolatedBathy(args.bathy_file, donor_x, donor_y, donor_deformation)
+eg_deformation = filtering.filter_deformation(filtername, donor_deformation, interpolated_bathymetry, spatial_resolution)
 
 stop = time.time()
 print()
@@ -120,7 +121,7 @@ print("************************************")
 print()
 
 """
-Stage 3: Write interpolated bathymetry and uplift to corresponding netCDF files
+Stage 3: Write interpolated bathymetry and deformation to corresponding netCDF files
 """
 print("Entering Stage 3: writing output.")
 print()
@@ -128,8 +129,8 @@ print("************************************")
 
 start = time.time()
 
-writeBathy.write_interpolatedBathy(interpolated_bathymetry, donor_x, donor_y, casename)
-writeUplift.write_uplift(eg_uplift, donor_x, donor_y, args.receiver, args.donor[0], filtername, casename, spatial_resolution)
+writeBathy.write_interpolatedBathy(interpolated_bathymetry, donor_x, donor_y, casename,  Ntime=np.shape(eg_deformation)[0])
+writeUplift.write_deformation(eg_deformation, donor_x, donor_y, args.receiver, args.donor[0], filtername, casename, spatial_resolution)
 
 stop = time.time()
 print()
