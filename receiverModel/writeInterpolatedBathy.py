@@ -4,7 +4,13 @@ from datetime import datetime
 
 """
 Functionality to write bathymetry data to a netCDF file usable by HySEA (T-HySEA 1.1.1)
+
+Contains the following functionalities:
+
+* write_interpolatedBathy     write interpolated bathymetry output (netCDF file)
+
 """
+
 
 def write_interpolatedBathy(interpolated_bathy, eg_x, eg_y, casename, Ntime=1):
   """

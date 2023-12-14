@@ -4,6 +4,15 @@ import matplotlib.pyplot as plt
 from scipy.interpolate import RectBivariateSpline
 import time
 
+"""
+Functionality to get the interpolated bathymetry (deformation taken into account)
+
+Contains the following functionalities:
+
+* get_interpolatedBathy   interpolate the bathymetry data to exchange grid and add the deformation for each timestep
+
+"""
+
 def get_interpolatedBathy(bathy_file, donor_x, donor_y, donor_deformation):
   """
   Interpolate the given bathymetry to the structured mesh given by donor_x and donor_y.

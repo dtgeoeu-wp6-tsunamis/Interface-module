@@ -3,6 +3,11 @@ from .seissol2exchangegrid import get_seissol
 
 """
 Functionality to get deformation data from the respective donor model. As of now, only SeisSol is a viable donor.
+
+Contains the following functionalities:
+
+* get_donorModel    choose donor model and get the output from said model
+
 """
 
 def get_donorModel(choose_donormodel, filename, spatial_resolution, include_horizontal=False):

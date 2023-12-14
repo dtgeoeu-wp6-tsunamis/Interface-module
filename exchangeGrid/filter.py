@@ -6,7 +6,13 @@ import time
 
 """
 Functionalities to filter the deformation data. Consists of a Kajiura filter.
+
+Contains the following functionalities:
+
+*
+*
 """
+
 import matplotlib.pyplot as plt
 
 #**********************************************************************************

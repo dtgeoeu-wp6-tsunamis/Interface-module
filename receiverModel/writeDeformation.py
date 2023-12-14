@@ -3,6 +3,11 @@ from .deformation2hysea import write2hysea
 
 """
 Functionality to write deformation data. As of now, only HySEA is a viable receiver.
+
+Contains the following functionalities:
+
+* write_deformation      parent routine; choose receiver model for which the output is written.
+
 """
 
 def write_deformation(eg_deformation, eg_x, eg_y, receiver, donor, filtername, casename, spatial_resolution):

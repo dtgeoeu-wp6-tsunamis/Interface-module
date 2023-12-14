@@ -14,8 +14,8 @@ Input was provided by:
   * Alexis Marboeuf (IPGP)
 
 Versions: 
-0.1 (10/23) M. Bänsch (UHAM)
-0.2 (12/23) M. Bänsch (UHAM)
+0.1 (10/23) M. Bänsch (UHAM)    Initial version (SeisSol to HySEA)
+0.2 (12/23) M. Bänsch (UHAM)    Added Kajiura Filter; some renaming
 
 *** Instructions for this module ***
 
@@ -33,19 +33,20 @@ Arguments that need/can to be provided:
   * --filter filter                          (optional) filter for the deformation data where filter = none, kajiura; default: none
   * --casename casename        (optional) string to append the filename with 
 
-
 """
-# Generic modules that are needed 
-#TODO: include functionality for parameter file
 
+# Generic modules that are needed 
 import argparse
 import time
 import donorModels.donorInterface as donorInterface
 import exchangeGrid.interpolateBathy as interpolateBathy
 import exchangeGrid.filter as filtering
 import receiverModel.writeInterpolatedBathy as writeBathy
-import receiverModel.writeUplift as writeUplift
+import receiverModel.writeDeformation as writeUplift
 import numpy as np
+
+#TODO: include functionality for parameter file
+
 
 # Define arguments the script has to be called with
 parser = argparse.ArgumentParser(
@@ -81,6 +82,11 @@ spatial_resolution = float(args.resolution)
 incl_horizontal = args.include_horizontal_deformation
 filtername = args.filter
 casename = args.casename
+
+print("************************************")
+print()
+print("       WP6 Interface module       ")
+print()
 
 """
 Stage 1: Get data from donor model 

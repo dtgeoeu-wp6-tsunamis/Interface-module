@@ -4,6 +4,11 @@ from datetime import datetime
 
 """
 Functionality to write deformation data to a netCDF file usable by HySEA (T-HySEA 1.1.1)
+
+Contains the following functionalities:
+
+* write2hysea   write HySEA output (netCDF file)
+
 """
 
 def write2hysea(eg_deformation, eg_x, eg_y, donor, filtername, casename, spatial_resolution):

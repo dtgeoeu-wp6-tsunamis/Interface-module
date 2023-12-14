@@ -6,50 +6,59 @@ import time
 import argparse
 from pyproj import Transformer
 
-# TODO: separate returns for horizontal deformation
-# TODO: set up inputCRS correctly
+# TODO: potentially set up inputCRS correctly
 
 """
 Module for the SeisSol donor functionalities.
+
+Contains the following functionalities:
+
+* seissolxdmf                                 class definition
+* project_coordinates                     project coordinates to WGS84 coordinates
+* setUp_grid_interpolation             set up grid and interpolation structures 
+* get_interpolation                         perform the interpolation on the data
+* interpolate_Seissol2structured    main routine
+* get_seissol                                   parent routine that is called from the main donorModel routine
+
 """
 
 class seissolxdmfExtended(seissolxdmf.seissolxdmf):
-    def generateVtkObject(self):
-        """Filling in vtk arrays with data from hdf5 file."""
+  def generateVtkObject(self):
+    """Filling in vtk arrays with data from hdf5 file."""
 
-        connect = self.ReadConnect()
-        nElements, ndim2 = connect.shape
+    connect = self.ReadConnect()
+    nElements, ndim2 = connect.shape
 
-        xyz = self.ReadGeometry()
-        points = vtk.vtkPoints()
-        if ndim2 == 3:
-            print("surface output, assuming the grid is at z=0")
-            xyz[:, 2] = 0.0
-        points.SetData(numpy_support.numpy_to_vtk(xyz))
+    xyz = self.ReadGeometry()
+    points = vtk.vtkPoints()
+    if ndim2 == 3:
+        print("surface output, assuming the grid is at z=0")
+        xyz[:, 2] = 0.0
+    points.SetData(numpy_support.numpy_to_vtk(xyz))
 
-        vtkCells = vtk.vtkCellArray()
-        connect2 = np.zeros((nElements, ndim2 + 1), dtype=np.int64)
-        # number of points in the cell
-        connect2[:, 0] = ndim2
-        connect2[:, 1:] = connect
-        vtkCells.SetCells(nElements, numpy_support.numpy_to_vtkIdTypeArray(connect2))
+    vtkCells = vtk.vtkCellArray()
+    connect2 = np.zeros((nElements, ndim2 + 1), dtype=np.int64)
+    # number of points in the cell
+    connect2[:, 0] = ndim2
+    connect2[:, 1:] = connect
+    vtkCells.SetCells(nElements, numpy_support.numpy_to_vtkIdTypeArray(connect2))
 
-        if ndim2 == 4:
-            unstrGrid3d = vtk.vtkUnstructuredGrid()
-            unstrGrid3d.SetPoints(points)
-            unstrGrid3d.SetCells(vtk.VTK_TETRA, vtkCells)
-            return unstrGrid3d
-        elif ndim2 == 3:
-            myPolydata = vtk.vtkPolyData()
-            myPolydata.SetPoints(points)
-            myPolydata.SetPolys(vtkCells)
-            return myPolydata
-        else:
-            raise NotImplementedError
+    if ndim2 == 4:
+        unstrGrid3d = vtk.vtkUnstructuredGrid()
+        unstrGrid3d.SetPoints(points)
+        unstrGrid3d.SetCells(vtk.VTK_TETRA, vtkCells)
+        return unstrGrid3d
+    elif ndim2 == 3:
+        myPolydata = vtk.vtkPolyData()
+        myPolydata.SetPoints(points)
+        myPolydata.SetPolys(vtkCells)
+        return myPolydata
+    else:
+        raise NotImplementedError
   
   
   
-def projectCoordinates(x, y, inputcrs):
+def project_coordinates(x, y, inputcrs):
   """
   This function takes the input x and y coordinates and returns the transformed WGS84 coordinates
 
@@ -73,7 +82,92 @@ def projectCoordinates(x, y, inputcrs):
   
   
   
-def interpolateSeissol2structured(sx, dx, coord_min, coord_max, include_horizontal, instants=[]):
+def setUp_grid_interpolation(coord_min, coord_max, dx, inputCRS):
+  """
+  Sets up the grid (image) for interpolation using VTK and probe filter. Returns the probe filter and shape for reshaping (needed within the interpolation)
+  
+  :param coord_min: minimum coordinates (bottom left corner)
+  :param coord_min: maximum coordinates (top right corner)
+  :param dx:  spatial resolution 
+  :param inputCRS:  CRS of the input 2d mesh 
+  """
+  
+  # set up x and y coordinates
+  x = np.arange(coord_min[0], coord_max[0] + dx, dx)
+  y = np.arange(coord_min[1], coord_max[1] + dx, dx)
+
+  z = np.array([0])   # ensure that the mesh is 2D
+  xx, yy = np.meshgrid(x, y)
+
+  # project the x and y coordinates to lat/lon
+  transformer = Transformer.from_crs(inputCRS, "epsg:4326", always_xy=True)
+  x_proj, y_proj = project_coordinates(x, y, inputCRS)
+
+  # Create grid image volume
+  imageSize = [x.shape[0], y.shape[0], z.shape[0]]
+  imageOrigin = [coord_min[0], coord_min[1], coord_min[2]]
+  imageSpacing = [dx, dx, dx]
+  
+  imageData = vtk.vtkImageData()
+  imageData.SetDimensions(imageSize)
+  imageData.SetOrigin(imageOrigin)
+  imageData.SetSpacing(imageSpacing)
+
+  # Create the interpolation filter
+  probeFilter = vtk.vtkProbeFilter()
+
+  probeFilter.SetInputData(imageData)
+  probeFilter.SpatialMatchOn()
+  
+  return probeFilter, xx.shape, x_proj, y_proj
+
+
+
+def get_interpolation(sx, unstrGrid3d, probeFilter, projDataShape, timestep, varName):
+  """
+  Routine that calculates the interpolation via probe filter.
+
+  :param sx: seissolxdmf file   
+  :param unstrGrid3d: unstructed grid object (derived from XDMF file)
+  :param probeFilter:  probe filter object
+  ;param projDataShape: shape that the data has to be reshaped to after interpolation
+  :param time: time index
+  :param varName: name of variable to be interpolated
+  """
+  
+  # Set up data structure
+  scalars = vtk.vtkFloatArray()
+
+  W = sx.ReadData(varName, timestep)
+  scalars = numpy_support.numpy_to_vtk(
+      num_array=W, deep=True, array_type=vtk.VTK_FLOAT
+  )
+  unstrGrid3d.GetCellData().SetScalars(scalars)
+  
+  # Create the CellDataToPointData filter
+  cellToPointFilter = vtk.vtkCellDataToPointData()
+  cellToPointFilter.SetInputData(unstrGrid3d)
+  cellToPointFilter.Update()
+
+  # Get the output grid with point data
+  outputGrid = cellToPointFilter.GetOutput()
+
+  # Perform the interpolation
+  probeFilter.SetSourceData(outputGrid)
+  start = time.time()
+  probeFilter.Update()
+  stop = time.time()
+  print(f"{varName} {timestep}: done probe filter in {stop - start} s")
+
+  polyout = probeFilter.GetOutput()
+  projData = polyout.GetPointData().GetScalars()
+  projDataNp = numpy_support.vtk_to_numpy(projData).reshape(projDataShape)
+  
+  return projDataNp
+  
+  
+  
+def interpolate_Seissol2structured(sx, dx, coord_min, coord_max, include_horizontal, instants=[]):
   """
   Interpolate the SeisSol XDMF to VTK
   :param sx: seissolxdmf file 
@@ -87,13 +181,13 @@ def interpolateSeissol2structured(sx, dx, coord_min, coord_max, include_horizont
   """
   unstrGrid3d = sx.generateVtkObject()
 
-  ndt = sx.ReadNdt()  # number of time steps in the Seissol file
+  nTime = sx.ReadNdt()  # number of time steps in the Seissol file
   if not instants:
-    # if not specific instant provided, use all in the seissol output
-    instants = list(range(0, ndt))
+    # if no specific instant is provided, use all in the seissol output
+    instants = list(range(0, nTime))
   else:
     # check if instants provided are within the possible ones
-    if not all(x in range(0, ndt) for x in instants):
+    if not all(x in range(0, nTime) for x in instants):
       print("Instants provided are outside the range of timesteps in SeisSol's output")
   
   # Choose which data interpolate (only vertical or all components) based on the input handle  
@@ -102,70 +196,22 @@ def interpolateSeissol2structured(sx, dx, coord_min, coord_max, include_horizont
   else:
     data = ['u3']    
   
-## Set up the mesh    
-  # set up x and y coordinates
-  x = np.arange(coord_min[0], coord_max[0] + dx, dx)
-  y = np.arange(coord_min[1], coord_max[1] + dx, dx)
-
-  z = np.array([0])   # ensure that the mesh is 2D
-  xx, yy = np.meshgrid(x, y)
-
+  # Set up the inputCRS   
   inputCRS = "+proj=tmerc +datum=WGS84 +k=0.9996 +lon_0=26.25 +lat_0=37.75"  # CRS of the input 2d mesh
 
-  # project the x and y coordinates to lat/lon
-  transformer = Transformer.from_crs(inputCRS, "epsg:4326", always_xy=True)
-  x_proj, y_proj = projectCoordinates(x, y, inputCRS)
+  # Create probe filter and get projected coordinates
+  probeFilter, projDataShape, x_proj, y_proj = setUp_grid_interpolation(coord_min, coord_max, dx, inputCRS)
 
-  # Create grid image volume
-  image1Size = [x.shape[0], y.shape[0], z.shape[0]]
-  image1Origin = [coord_min[0], coord_min[1], coord_min[2]]
-  image1Spacing = [dx, dx, dx]
-  
-  imageData1 = vtk.vtkImageData()
-  imageData1.SetDimensions(image1Size)
-  imageData1.SetOrigin(image1Origin)
-  imageData1.SetSpacing(image1Spacing)
-
-  # Perform the interpolation
-  probeFilter = vtk.vtkProbeFilter()
-
-  probeFilter.SetInputData(imageData1)
-  probeFilter.SpatialMatchOn()
-
+  # List for interpolated data
   probedData = []
 
-  for idt in instants:
-
-      for var in data:
-          print("update scalars")
-          scalars = vtk.vtkFloatArray()
-
-          W = sx.ReadData(var, idt)
-          scalars = numpy_support.numpy_to_vtk(
-              num_array=W, deep=True, array_type=vtk.VTK_FLOAT
-          )
-          unstrGrid3d.GetCellData().SetScalars(scalars)
-          # Create the CellDataToPointData filter
-          cellToPointFilter = vtk.vtkCellDataToPointData()
-          cellToPointFilter.SetInputData(unstrGrid3d)
-          cellToPointFilter.Update()
-
-          # Get the output grid with point data
-          outputGrid = cellToPointFilter.GetOutput()
-
-          # Perform the interpolation
-          probeFilter.SetSourceData(outputGrid)
-          start = time.time()
-          print("start probe filter")
-          probeFilter.Update()
-          stop = time.time()
-          print(f"{var} {idt}: done probe filter in {stop - start} s")
-
-          polyout = probeFilter.GetOutput()
-          projData = polyout.GetPointData().GetScalars()
-          projDataNp = numpy_support.vtk_to_numpy(projData).reshape(xx.shape)
+  # Perform interpolation (over each timestep and each variable)
+  print("Interpolation is performed using VTK probe filter")
+  for timestep in instants:
+      for varName in data:
+          projDataNp = get_interpolation(sx, unstrGrid3d, probeFilter, projDataShape, timestep, varName)
           probedData.append(projDataNp)
-         
+ 
   return probedData, x_proj, y_proj
 
 
@@ -184,6 +230,6 @@ def get_seissol(filename, spatial_resolution, include_horizontal):
   coordinate_min = np.round(geom.min(0) +  spatial_resolution, -4) 
   coordinate_max = np.round(geom.max(0) -  spatial_resolution, -4) 
 
-  donor_deformation, donor_x, donor_y = interpolateSeissol2structured(sx, spatial_resolution, coordinate_min, coordinate_max, include_horizontal)
+  donor_deformation, donor_x, donor_y = interpolate_Seissol2structured(sx, spatial_resolution, coordinate_min, coordinate_max, include_horizontal)
 
   return donor_deformation, donor_x, donor_y
