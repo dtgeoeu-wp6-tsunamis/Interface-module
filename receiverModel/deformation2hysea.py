@@ -3,14 +3,14 @@ from netCDF4 import Dataset
 from datetime import datetime
 
 """
-Functionality to write uplift data to a netCDF file usable by HySEA (T-HySEA 1.1.1)
+Functionality to write deformation data to a netCDF file usable by HySEA (T-HySEA 1.1.1)
 """
 
-def write2hysea(eg_uplift, eg_x, eg_y, donor, filtername, casename, spatial_resolution):
+def write2hysea(eg_deformation, eg_x, eg_y, donor, filtername, casename, spatial_resolution):
   """
-  Write uplift to a netCDF file viable for HySEA
+  Write deformation to a netCDF file viable for HySEA
   
-  :param eg_uplift: uplift data
+  :param eg_deformation: deformation data
   :param eg_x: x/lon-coordinates of the exchange grid
   :param eg_y: y/lat-coordinates of the exchange grid
   :param donor: donor model that was used 
@@ -20,13 +20,13 @@ def write2hysea(eg_uplift, eg_x, eg_y, donor, filtername, casename, spatial_reso
   """
   if (filtername == 'none'):
     filtername = 'unfiltered'
-  upliftfile = f"{casename}_{donor}_{filtername}_dx{int(spatial_resolution)}_uplift.nc"
+  deformationfile = f"{casename}_{donor}_{filtername}_dx{int(spatial_resolution)}_deformation.nc"
   Nrow = len(eg_y)
   Ncolumn = len(eg_x)
-  Ntime = np.shape(eg_uplift)[0]
+  Ntime = np.shape(eg_deformation)[0]
 
   # Create the netCDF file and fill it
-  ds = Dataset(upliftfile, 'w', format='NETCDF4')
+  ds = Dataset(deformationfile, 'w', format='NETCDF4')
   ds.title = f"{donor} model outputs converted to a structured mesh by interpolation"
   ds.history = "File written using netCDF4 Python module"
   today = datetime.today()
@@ -50,6 +50,6 @@ def write2hysea(eg_uplift, eg_x, eg_y, donor, filtername, casename, spatial_reso
   
   for t in range(Ntime):
     time[t] = t
-    z[t,:,:] = eg_uplift[t]
+    z[t,:,:] = eg_deformation[t]
   
   ds.close()
