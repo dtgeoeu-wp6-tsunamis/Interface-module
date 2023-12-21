@@ -1,0 +1,7 @@
+*.nc
+*.out
+*.h5
+*.xmf
+*.xdmf
+__pycache__
+bingclaw*

@@ -8,7 +8,6 @@ Functionality to write bathymetry data to a netCDF file usable by HySEA (T-HySEA
 Contains the following functionalities:
 
 * write_interpolatedBathy     write interpolated bathymetry output (netCDF file)
-
 """
 
 
@@ -22,6 +21,7 @@ def write_interpolatedBathy(interpolated_bathy, eg_x, eg_y, casename, Ntime=1):
   :param casename: prefix (character) for the name of the netCDF file
   :param Ntime: timesteps for bathymetry
   """
+  
   new_bathyfile = casename + "_bathymetry_interp.nc"
   ds = Dataset(new_bathyfile, 'w', format='NETCDF4')
   ds.Conventions = "CF-1.7"

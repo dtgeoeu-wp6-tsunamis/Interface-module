@@ -8,7 +8,6 @@ Functionality to write deformation data to a netCDF file usable by HySEA (T-HySE
 Contains the following functionalities:
 
 * write2hysea   write HySEA output (netCDF file)
-
 """
 
 def write2hysea(eg_deformation, eg_x, eg_y, donor, filtername, casename, spatial_resolution):
@@ -23,6 +22,7 @@ def write2hysea(eg_deformation, eg_x, eg_y, donor, filtername, casename, spatial
   :param casename: prefix (character) for the name of the netCDF file
   :param spatial_resolution: spatial resolution. Will be used as prefix (character) for the name of the netCDF file  
   """
+  
   if (filtername == 'none'):
     filtername = 'unfiltered'
   deformationfile = f"{casename}_{donor}_{filtername}_dx{int(spatial_resolution)}_deformation.nc"

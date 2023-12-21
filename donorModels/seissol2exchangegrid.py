@@ -6,7 +6,7 @@ import time
 import argparse
 from pyproj import Transformer
 
-# TODO: potentially set up inputCRS correctly
+# TODO: potentially set up inputCRS as input
 
 """
 Module for the SeisSol donor functionalities.
@@ -19,8 +19,11 @@ Contains the following functionalities:
 * get_interpolation                         perform the interpolation on the data
 * interpolate_Seissol2structured    main routine
 * get_seissol                                   parent routine that is called from the main donorModel routine
-
 """
+
+# Global parameters
+basicCRS = 'epsg:4326' # basic lat-lon coordinate system
+
 
 class seissolxdmfExtended(seissolxdmf.seissolxdmf):
   def generateVtkObject(self):
@@ -32,7 +35,7 @@ class seissolxdmfExtended(seissolxdmf.seissolxdmf):
     xyz = self.ReadGeometry()
     points = vtk.vtkPoints()
     if ndim2 == 3:
-        print("surface output, assuming the grid is at z=0")
+        print("Surface output, assuming the grid is at z=0")
         xyz[:, 2] = 0.0
     points.SetData(numpy_support.numpy_to_vtk(xyz))
 
@@ -58,15 +61,15 @@ class seissolxdmfExtended(seissolxdmf.seissolxdmf):
   
   
   
-def project_coordinates(x, y, inputcrs):
+def project_coordinates(x, y, inputCRS):
   """
-  This function takes the input x and y coordinates and returns the transformed WGS84 coordinates
+  This function takes the input x and y coordinates and returns the transformed WGS84 coordinates.
 
   :param x: x-coordinates
   :param y: y-coordinates
-  :param inputcrs: input CRS
+  :param inputCRS: input CRS
   """
-  transformer = Transformer.from_crs(inputcrs, "epsg:4326", always_xy=True)
+  transformer = Transformer.from_crs(inputCRS, basicCRS, always_xy=True)
 
     # transform x-coordinates
   y_lowerRow = np.repeat(y[0], len(x))
@@ -84,7 +87,7 @@ def project_coordinates(x, y, inputcrs):
   
 def setUp_grid_interpolation(coord_min, coord_max, dx, inputCRS):
   """
-  Sets up the grid (image) for interpolation using VTK and probe filter. Returns the probe filter and shape for reshaping (needed within the interpolation)
+  Sets up the grid (image) for interpolation using VTK and probe filter. Returns the probe filter and shape for reshaping (needed within the interpolation).
   
   :param coord_min: minimum coordinates (bottom left corner)
   :param coord_min: maximum coordinates (top right corner)
@@ -100,7 +103,6 @@ def setUp_grid_interpolation(coord_min, coord_max, dx, inputCRS):
   xx, yy = np.meshgrid(x, y)
 
   # project the x and y coordinates to lat/lon
-  transformer = Transformer.from_crs(inputCRS, "epsg:4326", always_xy=True)
   x_proj, y_proj = project_coordinates(x, y, inputCRS)
 
   # Create grid image volume
@@ -157,7 +159,7 @@ def get_interpolation(sx, unstrGrid3d, probeFilter, projDataShape, timestep, var
   start = time.time()
   probeFilter.Update()
   stop = time.time()
-  print(f"{varName} {timestep}: done probe filter in {stop - start} s")
+  print(f"{varName} {timestep}: done probe filter in {stop - start} s.")
 
   polyout = probeFilter.GetOutput()
   projData = polyout.GetPointData().GetScalars()
@@ -167,28 +169,21 @@ def get_interpolation(sx, unstrGrid3d, probeFilter, projDataShape, timestep, var
   
   
   
-def interpolate_Seissol2structured(sx, dx, coord_min, coord_max, include_horizontal, instants=[]):
+def interpolate_Seissol2structured(sx, dx, coord_min, coord_max, include_horizontal):
   """
-  Interpolate the SeisSol XDMF to VTK
+  Interpolate the SeisSol XDMF to VTK.
+  
   :param sx: seissolxdmf file 
   :param dx: spatial resolution
   :param coord_min: minimum coordinates for box
   :param coord_max: maximum coordinates for box
   :param include_horizontal: handle whether to interpolate only the vertical component or not
-  :param instants: time steps to include in the out netCDF. If not provided, all time steps will be included
   
   returns deformation data and coordinates
   """
   unstrGrid3d = sx.generateVtkObject()
 
   nTime = sx.ReadNdt()  # number of time steps in the Seissol file
-  if not instants:
-    # if no specific instant is provided, use all in the seissol output
-    instants = list(range(0, nTime))
-  else:
-    # check if instants provided are within the possible ones
-    if not all(x in range(0, nTime) for x in instants):
-      print("Instants provided are outside the range of timesteps in SeisSol's output")
   
   # Choose which data interpolate (only vertical or all components) based on the input handle  
   if (include_horizontal):
@@ -206,8 +201,8 @@ def interpolate_Seissol2structured(sx, dx, coord_min, coord_max, include_horizon
   probedData = []
 
   # Perform interpolation (over each timestep and each variable)
-  print("Interpolation is performed using VTK probe filter")
-  for timestep in instants:
+  print("Interpolation is performed using VTK probe filter.")
+  for timestep in range(nTime):
       for varName in data:
           projDataNp = get_interpolation(sx, unstrGrid3d, probeFilter, projDataShape, timestep, varName)
           probedData.append(projDataNp)
@@ -218,14 +213,18 @@ def interpolate_Seissol2structured(sx, dx, coord_min, coord_max, include_horizon
 
 def get_seissol(filename, spatial_resolution, include_horizontal):
   """
-  Actual part that will be used by the main donor model functionality to get the deformation data
+  Actual part that will be used by the main donor model functionality to get the deformation data.
+  
   :param filename: filename for the SeisSol data (has to be an XDMF file)
   :param spatial_resolution: spatial_resolution in meters
   :param include_horizontal: boolean handle whether the output will only contain the vertical deformation (deformation) or also include the horizontal deformation
   """
-
+  
+  print("Getting output data from SeisSol.\n")
+  
   sx = seissolxdmfExtended(filename) # get seissolxdmf from provided XDMF file
-# get x, y and z interval min/max and round to nearest 1000 (if not done, the interpolation does nothing)
+  
+  # Get x, y and z interval min/max and round to nearest 1000 (if not done, the interpolation does nothing)
   geom = sx.ReadGeometry()
   coordinate_min = np.round(geom.min(0) +  spatial_resolution, -4) 
   coordinate_max = np.round(geom.max(0) -  spatial_resolution, -4) 

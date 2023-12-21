@@ -26,13 +26,14 @@ How to run the script:
 
 Arguments that need/can to be provided:
   * --donor donor_model           where donor_model = seissol, shaltop, bingclaw (all lower case!) 
-  * donor_output                       name of the output file from the donor model
+  * donor_output                       name of the output file or path from the donor model
   * bathy_file                             name of the bathymetry file. Domain has to be larger compared to the domain from the donor model
   * resolution                             spatial resolution for the interpolation (will be used for both x- and y-coordinates)
   * --receiver receiver_model     (optional) receiver model (as of now, only hysea is available)
   * --filter filter                          (optional) filter for the deformation data where filter = none, kajiura; default: none
   * --casename casename        (optional) string to append the filename with 
 
+Regarding the donor_output, note that SeisSol requires a filename, while Bingclaw requires the path to the directory where the (ESRI ASCII) output files are located
 """
 
 # Generic modules that are needed 
@@ -45,8 +46,8 @@ import receiverModel.writeInterpolatedBathy as writeBathy
 import receiverModel.writeDeformation as writeUplift
 import numpy as np
 
-#TODO: include functionality for parameter file
-
+#TODO: include functionality for parameter file ?
+#TODO: include time for output files
 
 # Define arguments the script has to be called with
 parser = argparse.ArgumentParser(
@@ -58,7 +59,7 @@ parser.add_argument(
     help="donor model; seissol, shaltop, bingclaw (all lower case)",
     required=True,
 )
-parser.add_argument("donor_output", help="name of the output file from the donor model")
+parser.add_argument("donor_output", help="name of the output file(s) from the donor model")
 parser.add_argument("bathy_file", help="name of the bathymetry file")
 parser.add_argument(
     "--receiver",
@@ -83,37 +84,30 @@ incl_horizontal = args.include_horizontal_deformation
 filtername = args.filter
 casename = args.casename
 
-print("************************************")
-print()
-print("       WP6 Interface module       ")
-print()
+print("************************************\n")
+print("       WP6 Interface module       \n")
 
 """
 Stage 1: Get data from donor model 
 """
-print("************************************")
-print()
-print("Entering Stage 1: getting the data from the donor model.")
-print()
-print("************************************")
+print("************************************\n")
+print("Entering Stage 1: getting the data from the donor model.\n")
+print("************************************\n")
 
 start = time.time()
 
 donor_deformation, donor_x, donor_y = donorInterface.get_donorModel(args.donor[0], args.donor_output, spatial_resolution, incl_horizontal)
 
 stop = time.time()
-print()
-print(f"Stage 1 completed (it took {stop - start} seconds).")
-print("************************************")
-print()
+print(f"\nStage 1 completed (it took {stop - start} seconds).\n")
+print("************************************\n")
 
 """
 Stage 2: interpolate bathymetry data to same grid as the deformation. Filter the deformation if desired.
 """
 
-print("Entering Stage 2: processing the data.")
-print()
-print("************************************")
+print("Entering Stage 2: processing the data.\n")
+print("************************************\n")
 
 start = time.time()
 
@@ -121,16 +115,13 @@ interpolated_bathymetry = interpolateBathy.get_interpolatedBathy(args.bathy_file
 eg_deformation = filtering.filter_deformation(filtername, donor_deformation, interpolated_bathymetry, spatial_resolution)
 
 stop = time.time()
-print()
-print(f"Stage 2 completed (it took {stop - start} seconds).")
-print("************************************")
-print()
+print(f"\nStage 2 completed (it took {stop - start} seconds).\n")
+print("************************************\n")
 
 """
 Stage 3: Write interpolated bathymetry and deformation to corresponding netCDF files
 """
-print("Entering Stage 3: writing output.")
-print()
+print("Entering Stage 3: writing output.\n")
 print("************************************")
 
 start = time.time()
@@ -139,7 +130,5 @@ writeBathy.write_interpolatedBathy(interpolated_bathymetry, donor_x, donor_y, ca
 writeUplift.write_deformation(eg_deformation, donor_x, donor_y, args.receiver, args.donor[0], filtername, casename, spatial_resolution)
 
 stop = time.time()
-print()
-print(f"Stage 3 completed (it took {stop - start} seconds).")
-print("************************************")
-print()
+print(f"\nStage 3 completed (it took {stop - start} seconds).\n")
+print("************************************\n")

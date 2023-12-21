@@ -5,15 +5,17 @@ from scipy import fft
 import time
 
 """
-Functionalities to filter the deformation data. Consists of a Kajiura filter.
+Functionalities to filter the deformation data. Consists of a Kajiura or no filter.
 
 Contains the following functionalities:
 
-*
-*
+* precompute_R          precompute sea surface response as in Kajiura 1963
+* precompute_σ          precompute σ for apply_kajiura_fft
+* compute_filter          compute filter matrix for the use in apply_kajiura_fft
+* apply_kajiura_fft       calculate FFT to get sea surface response
+* use_kajiura_filter      main Kajiura filter routine
+* filter_deformation    parent routine where the filter is chosen (currently: kajiura or none)
 """
-
-import matplotlib.pyplot as plt
 
 #**********************************************************************************
 # The following routines are functionalities for the Kajiura filter which are based on a julia version from LMU
@@ -116,6 +118,7 @@ def compute_filter(filter_depth, h_max, Δx, Δy, nx, ny, n_h, precalc_R):
   :param n_h: size of box in which σ will be calculated (default: 20)  
   :param precalc_R: precomputed values for initial surface displacement
   """
+  
   filter_nx_half = int(np.ceil(n_h * h_max / Δx / 2))
   filter_ny_half = int(np.ceil(n_h * h_max / Δy / 2))
 
@@ -193,7 +196,7 @@ def use_kajiura_filter(deformation, bathymetry, spatial_resolution):
   print(f"Precomputing parts for the filtering.")
   start = time.time()
   precalc_R = precompute_R()
-  precalc_σ = precompute_sigma(-np.max(bathymetry), -np.min(bathymetry), 
+  precalc_σ = precompute_σ(-np.max(bathymetry), -np.min(bathymetry), 
                                                       spatial_resolution, spatial_resolution, precalc_R)
   stop = time.time()
   print(f"Precomputations performed. It took {stop - start} seconds.")

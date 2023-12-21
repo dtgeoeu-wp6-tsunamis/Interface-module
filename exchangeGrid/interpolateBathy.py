@@ -1,6 +1,5 @@
 import numpy as np
 from netCDF4 import Dataset
-import matplotlib.pyplot as plt
 from scipy.interpolate import RectBivariateSpline
 import time
 
@@ -10,7 +9,6 @@ Functionality to get the interpolated bathymetry (deformation taken into account
 Contains the following functionalities:
 
 * get_interpolatedBathy   interpolate the bathymetry data to exchange grid and add the deformation for each timestep
-
 """
 
 def get_interpolatedBathy(bathy_file, donor_x, donor_y, donor_deformation):
@@ -30,8 +28,6 @@ def get_interpolatedBathy(bathy_file, donor_x, donor_y, donor_deformation):
   bathy_x = bathy_data.variables['x']
   bathy_y = bathy_data.variables['y']
   bathy = bathy_data.variables['z']
-
-  xg, yg = np.meshgrid(bathy_x, bathy_y)
 
   # Create interpolation class 
   # Note that x and y-coordinates are flipped due to the storage in the netCDF file

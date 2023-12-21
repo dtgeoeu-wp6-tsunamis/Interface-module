@@ -2,4 +2,4 @@
 Interface module - donor models 
 """
 
-__all__ = ["donorInterface", "seissol2exchangegrid"]
+__all__ = ["bingclaw2exchangegrid","donorInterface", "seissol2exchangegrid", "shaltop2exchangegrid"]

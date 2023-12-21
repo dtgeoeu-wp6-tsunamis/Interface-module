@@ -30,3 +30,21 @@ Arguments that need/can to be provided:
   * --receiver receiver_model     (optional) receiver model (as of now, only hysea is available)
   * --filter filter                          (optional) filter for the uplift data where filter = none, kajiura; default: none
   * --casename casename        (optional) string to append the filename with 
+
+# Required Python packages
+To run the Interface module, the following Python packages have to be installed on the system. 
+
+Standard Packages:
+  * argparse
+  * datetime
+  * math
+  * numpy
+  * os
+  * scipy
+  * time 
+
+Non-standard packages:
+  * netCDF4
+  * pyvista
+  * seissolxdmf
+  * vtk

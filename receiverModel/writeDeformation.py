@@ -7,7 +7,6 @@ Functionality to write deformation data. As of now, only HySEA is a viable recei
 Contains the following functionalities:
 
 * write_deformation      parent routine; choose receiver model for which the output is written.
-
 """
 
 def write_deformation(eg_deformation, eg_x, eg_y, receiver, donor, filtername, casename, spatial_resolution):
@@ -23,6 +22,7 @@ def write_deformation(eg_deformation, eg_x, eg_y, receiver, donor, filtername, c
   :param casename: prefix (character) for the name of the netCDF file  
   :param spatial_resolution: spatial resolution. Will be used as prefix (character) for the name of the netCDF file  
   """
+  
   if (receiver == 'hysea'):
     write2hysea(eg_deformation, eg_x, eg_y, donor, filtername, casename, spatial_resolution)
   else:
