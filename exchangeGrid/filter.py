@@ -1,8 +1,9 @@
 import numpy as np
-from scipy import interpolate
-from math import sqrt, ceil
-from scipy import fft
+import os
 import time
+
+from math import sqrt, ceil
+from scipy import interpolate, fft
 
 """
 Functionalities to filter the deformation data. Consists of a Kajiura or no filter.
@@ -16,6 +17,11 @@ Contains the following functionalities:
 * use_kajiura_filter      main Kajiura filter routine
 * filter_deformation    parent routine where the filter is chosen (currently: kajiura or none)
 """
+
+# Some definitions for a nice print on the terminal
+column_size = os.get_terminal_size().columns
+asterisk_fill = "*" * column_size
+
 
 #**********************************************************************************
 # The following routines are functionalities for the Kajiura filter which are based on a julia version from LMU
@@ -44,7 +50,7 @@ def precompute_R():
 
 
 
-def precompute_sigma(h_min, h_max, Δx, Δy, precalc_R, n_h=20.0):
+def precompute_σ(h_min, h_max, Δx, Δy, precalc_R, n_h=20.0):
   """
   Function to precompute σ, which will be used later.
                          h^2
@@ -193,19 +199,22 @@ def use_kajiura_filter(deformation, bathymetry, spatial_resolution):
   current_η = np.zeros((Ny, Nx))
   current_deformation_diff = np.zeros((Ny, Nx))
   
-  print(f"Precomputing parts for the filtering.")
+  print(f"Precomputing parts for the filtering.".center(column_size))
   start = time.time()
   precalc_R = precompute_R()
   precalc_σ = precompute_σ(-np.max(bathymetry), -np.min(bathymetry), 
                                                       spatial_resolution, spatial_resolution, precalc_R)
   stop = time.time()
-  print(f"Precomputations performed. It took {stop - start} seconds.")
+  print(f"Precomputations performed. It took {stop - start} seconds.".center(column_size))
 
   filtered_deformation = np.zeros_like(deformation)
-  print("Starting filtering of deformation data.")
+  frmt = len(str(Ntime)) # formatter for terminal output
+
+  print("Starting filtering of deformation data.".center(column_size))
+  
   for t in range(Ntime):
     start = time.time()  
-    print(f"Filter is in timestep {t+1} of {Ntime}.")
+    print(f"Filter is in timestep {t+1:{frmt}d} of {Ntime}.".center(column_size))
     
     current_bathymetry = bathymetry[t]
     current_deformation = deformation[t]
@@ -226,7 +235,7 @@ def use_kajiura_filter(deformation, bathymetry, spatial_resolution):
     filtered_deformation[t] = current_η
 
     stop = time.time()
-    print(f"Timestep {t+1} took {stop - start} seconds.")
+    print(f"Timestep {t+1} took {stop - start} seconds.".center(column_size))
 
   return filtered_deformation
 
@@ -244,17 +253,17 @@ def filter_deformation(choose_filter, deformation, bathymetry, spatial_resolutio
   :param spatial_resolution: spatial resolution for both longitude and latitude direction
   """
   
-  if (choose_filter == 'kajiura'):
-      print('Using a Kajiura filter for smoothing the deformation data.')
+  if (choose_filter == "kajiura"):
+      print("Using a Kajiura filter for smoothing the deformation data.".center(column_size))
       start = time.time()
       filtered_deformation = use_kajiura_filter(deformation, bathymetry, spatial_resolution)
       stop = time.time()
-      print(f"The Kajiura filter took {stop - start} seconds.")
+      print(f"The Kajiura filter took {stop - start} seconds.\n".center(column_size))
       return filtered_deformation
-  elif (choose_filter == 'none'):
-      print('Uplift data will not be filtered')
+  elif (choose_filter == "none"):
+      print("Uplift data will not be filtered.\n".center(column_size))
       return deformation
   else:
-      print('No known filter was used. Will opt for no filtering as a default.')
+      print("No known filter was used. Will opt for no filtering as a default.\n".center(column_size))
       return deformation
 

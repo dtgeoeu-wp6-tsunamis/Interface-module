@@ -1,6 +1,7 @@
 import numpy as np
-from netCDF4 import Dataset
+
 from datetime import datetime
+from netCDF4 import Dataset
 
 """
 Functionality to write deformation data to a netCDF file usable by HySEA (T-HySEA 1.1.1)
@@ -10,13 +11,15 @@ Contains the following functionalities:
 * write2hysea   write HySEA output (netCDF file)
 """
 
-def write2hysea(eg_deformation, eg_x, eg_y, donor, filtername, casename, spatial_resolution):
+
+def write2hysea(eg_deformation, eg_x, eg_y, eg_time, donor, filtername, casename, spatial_resolution):
   """
   Write deformation to a netCDF file viable for HySEA
   
   :param eg_deformation: deformation data
   :param eg_x: x/lon-coordinates of the exchange grid
   :param eg_y: y/lat-coordinates of the exchange grid
+  :param eg_time: time for each timestep on the exchange grid
   :param donor: donor model that was used 
   :param filtername: prefix (character) for the name of the netCDF file  
   :param casename: prefix (character) for the name of the netCDF file
@@ -54,7 +57,7 @@ def write2hysea(eg_deformation, eg_x, eg_y, donor, filtername, casename, spatial
   z = ds.createVariable('z', 'f4', ('time', 'y', 'x'))
   
   for t in range(Ntime):
-    time[t] = t
+    time[t] = eg_time[t]
     z[t,:,:] = eg_deformation[t]
   
   ds.close()

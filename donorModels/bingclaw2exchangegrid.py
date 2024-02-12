@@ -1,7 +1,8 @@
 import numpy as np
-from pyproj import Transformer
 import os
 import time
+
+from pyproj import Transformer
 from scipy.interpolate import RectBivariateSpline
 
 """
@@ -15,12 +16,16 @@ Contains the following functionalities:
 * read_bingclaw_header           read header of first fort.q files to set up Bingclaw data structure
 * read_bingclaw_variables        read variables from all fort.q files       
 * read_bingclaw_ESRIASCII       main routine to read bingclaw files
-* interpolate_bingclawdata       perform interpolation to new grid
+* interpolate_bingclaw_data       perform interpolation to new grid
 * get_bingclaw                          parent routine that is called from the main donorModel routine
 """
 
 # Global parameters
 basicCRS = 'epsg:4326' # basic lat-lon coordinate system
+
+# Some definitions for a nice print on the terminal
+column_size = os.get_terminal_size().columns
+asterisk_fill = "*" * column_size
 
 
 def read_bingclaw_time(datapath, filenames):
@@ -112,20 +117,20 @@ def read_bingclaw_variables(Ntime, Nx, Ny, datapath, filenames):
   """
   
   bingclaw_deformation = np.zeros((Ntime, Ny, Nx))
+  frmt = len(str(Ntime)) # formatter for terminal output  
   
   for time in range(Ntime):
-    if (time % 10 == 0): print(f"Reading timestep {time} out of {Ntime}.")
+    if (time % 10 == 0): print(f"Reading timestep {time+1:{frmt}d} out of {Ntime}.".center(column_size))
     bingclaw_file = open(os.path.join(datapath, filenames[time]), 'r')
     bingclaw_data = np.loadtxt(bingclaw_file, skiprows=8)
-    
-    #raster_h = np.reshape(bingclaw_data[:,0], (Nx, Ny))
-    raster_η = np.reshape(bingclaw_data[:,-1], (Nx, Ny))
-    bingclaw_deformation[time] = np.transpose(raster_η) 
+
+    raster_h = np.reshape(bingclaw_data[:,0], (Ny, Nx))
+    bingclaw_deformation[time] = raster_h 
 
   return bingclaw_deformation
 
 
-        
+
 def read_bingclaw_ESRIASCII(donor_output_path):
   """     
   Main functionality to read the data from the ESRI ASCII Bingclaw files.
@@ -156,13 +161,13 @@ def read_bingclaw_ESRIASCII(donor_output_path):
   start = time.time()
   bingclaw_deformation = read_bingclaw_variables(Ntime, Nx, Ny, donor_output_path, data_files)
   stop = time.time()    
-  print(f"Data has been read. It took {stop - start} s.")
+  print(f"Data has been read. It took {stop - start} s.".center(column_size))
     
-  return Ntime, bingclaw_deformation, bingclaw_x, bingclaw_y
+  return Ntime, bingclaw_deformation, bingclaw_x, bingclaw_y, bingclaw_time
 
 
 
-def interpolate_bingclawdata(Ntime, bingclaw_x, bingclaw_y, bingclaw_deformation, donor_x, donor_y):
+def interpolate_bingclaw_data(Ntime, bingclaw_x, bingclaw_y, bingclaw_deformation, donor_x, donor_y):
   """
   Interpolation routine to interpolate the Bingclaw data to the new grid. Makes use of RectBivariateSpline.
   
@@ -191,11 +196,11 @@ def get_bingclaw(donor_output_path, spatial_resolution):
   """
   Main donor model functionality to get the deformation data.
   
-  :param donor_output_path: path to the direction where the ESRI ASCII files are stored
+  :param donor_output_path: path to the directory where the ESRI ASCII files are stored
   :param spatial_resolution: spatial_resolution in meters
   """
 
-  print("Getting output data from Bingclaw.\n")
+  print("Getting output data from Bingclaw.\n".center(column_size))
 
   # Get projected spatial resolution
   inputCRS = "+proj=tmerc +datum=WGS84"  # CRS
@@ -203,17 +208,17 @@ def get_bingclaw(donor_output_path, spatial_resolution):
   projection_resolution = transformer.transform(spatial_resolution, 1.)[0]
 
   # Get Bingclaw data
-  Ntime, bingclaw_deformation, bingclaw_x, bingclaw_y = read_bingclaw_ESRIASCII(donor_output_path)
+  Ntime, bingclaw_deformation, bingclaw_x, bingclaw_y, donor_time = read_bingclaw_ESRIASCII(donor_output_path)
 
   # Use Bingclaw coordinates to create new grid coordinates (with projection_resolution)
   donor_x = np.arange(np.min(bingclaw_x), np.max(bingclaw_x) + projection_resolution, projection_resolution)
   donor_y = np.arange(np.min(bingclaw_y), np.max(bingclaw_y) + projection_resolution, projection_resolution)
   
   # Interpolate Bingclaw data to new grid
-  print("Starting the interpolation (Bingclaw).")
+  print("Starting the interpolation (Bingclaw).".center(column_size))
   start = time.time()
-  donor_deformation = interpolate_bingclawdata(Ntime, bingclaw_x, bingclaw_y, bingclaw_deformation, donor_x, donor_y)
+  donor_deformation = interpolate_bingclaw_data(Ntime, bingclaw_x, bingclaw_y, bingclaw_deformation, donor_x, donor_y)
   stop = time.time()    
-  print(f"The interpolation took {stop - start} s\n")
+  print(f"The interpolation took {stop - start} s.\n".center(column_size))
 
-  return donor_deformation, donor_x, donor_y
+  return donor_deformation, donor_x, donor_y, donor_time

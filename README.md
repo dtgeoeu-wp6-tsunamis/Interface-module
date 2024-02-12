@@ -40,6 +40,7 @@ Standard Packages:
   * math
   * numpy
   * os
+  * pathlib
   * scipy
   * time 
 
@@ -48,3 +49,8 @@ Non-standard packages:
   * pyvista
   * seissolxdmf
   * vtk
+
+# To Dos:
+  * Correct time output for SeisSol 
+  * CRS references for SeisSol and SHALTOP need to be implemented and then included in the interface module
+  * (potentially) include parameter file support

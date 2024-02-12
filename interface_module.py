@@ -26,6 +26,7 @@ How to run the script:
 
 Arguments that need/can to be provided:
   * --donor donor_model           where donor_model = seissol, shaltop, bingclaw (all lower case!) 
+  *--CRS_reference                    CRS coordinates reference (lon, lat of lower left corner of domain)
   * donor_output                       name of the output file or path from the donor model
   * bathy_file                             name of the bathymetry file. Domain has to be larger compared to the domain from the donor model
   * resolution                             spatial resolution for the interpolation (will be used for both x- and y-coordinates)
@@ -45,36 +46,41 @@ import exchangeGrid.filter as filtering
 import receiverModel.writeInterpolatedBathy as writeBathy
 import receiverModel.writeDeformation as writeUplift
 import numpy as np
+import os
 
 #TODO: include functionality for parameter file ?
-#TODO: include time for output files
+#TODO: Check if CRS_reference can be removed after SeisSol and SHALTOP have a CRS reference; In this case, the CRS_reference in each donor module needs to be changed
+
+# Some definitions for a nice print on the terminal
+column_size = os.get_terminal_size().columns
+asterisk_fill = "*" * column_size
+
 
 # Define arguments the script has to be called with
-parser = argparse.ArgumentParser(
-    description="Interface module for the DT-GEO WP6 tsunami workflow (source to wave-filter)"
-)
-parser.add_argument(
-    "--donor",
-    nargs=1,
+parser = argparse.ArgumentParser(description="Interface module for the DT-GEO WP6 tsunami workflow (source to wave-filter)")
+parser.add_argument("-d", "--donor",
     help="donor model; seissol, shaltop, bingclaw (all lower case)",
-    required=True,
-)
+    required=True,)
+parser.add_argument("-crs", "--CRS_reference", 
+    metavar=("[lon, lat]"),
+    nargs=2,
+    type=str,
+    help="CRS reference coordinates (list of longitude and latitude of lower left corner of the domain); required for SHALTOP and SeisSol.",
+    default = [0., 0.])
 parser.add_argument("donor_output", help="name of the output file(s) from the donor model")
 parser.add_argument("bathy_file", help="name of the bathymetry file")
 parser.add_argument(
-    "--receiver",
-    nargs=1,
+    "-r", "--receiver",
     help="receiver model; hysea (all lower case)",
-    default="hysea",
-)
+    default="hysea",)
 parser.add_argument("resolution", help="spatial resolution for both horizontal directions (in m)" )
 parser.add_argument("--include_horizontal_deformation", 
     help="spatial resolution for the interpolation (will be used for both x- and y-coordinates)", 
     default=False)
-parser.add_argument("--filter", 
+parser.add_argument("-f", "--filter", 
     help="filter for the deformation data where filter = none, kajiura; default: none",
     default='none')
-parser.add_argument("--casename", 
+parser.add_argument("-c", "--casename", 
     help="string to append the filename with",
     default='src2waveOut')
 
@@ -83,31 +89,36 @@ spatial_resolution = float(args.resolution)
 incl_horizontal = args.include_horizontal_deformation
 filtername = args.filter
 casename = args.casename
+CRS_reference = args.CRS_reference
 
-print("************************************\n")
-print("       WP6 Interface module       \n")
+print(asterisk_fill + "\n")
+print("WP6 Interface module\n".center(column_size))
 
 """
 Stage 1: Get data from donor model 
 """
-print("************************************\n")
-print("Entering Stage 1: getting the data from the donor model.\n")
-print("************************************\n")
+print(asterisk_fill + "\n")
+
+print("Entering Stage 1: getting the data from the donor model.\n".center(column_size))
+print(asterisk_fill + "\n")
+
 
 start = time.time()
 
-donor_deformation, donor_x, donor_y = donorInterface.get_donorModel(args.donor[0], args.donor_output, spatial_resolution, incl_horizontal)
+donor_deformation, donor_x, donor_y, donor_time = donorInterface.get_donorModel(args.donor, args.donor_output, spatial_resolution, CRS_reference, incl_horizontal)
 
 stop = time.time()
-print(f"\nStage 1 completed (it took {stop - start} seconds).\n")
-print("************************************\n")
+print((f"Stage 1 completed. It took {stop - start} seconds.\n").center(column_size))
+print(asterisk_fill + "\n")
+
 
 """
 Stage 2: interpolate bathymetry data to same grid as the deformation. Filter the deformation if desired.
 """
 
-print("Entering Stage 2: processing the data.\n")
-print("************************************\n")
+print("Entering Stage 2: processing the data.\n".center(column_size))
+print(asterisk_fill + "\n")
+
 
 start = time.time()
 
@@ -115,20 +126,24 @@ interpolated_bathymetry = interpolateBathy.get_interpolatedBathy(args.bathy_file
 eg_deformation = filtering.filter_deformation(filtername, donor_deformation, interpolated_bathymetry, spatial_resolution)
 
 stop = time.time()
-print(f"\nStage 2 completed (it took {stop - start} seconds).\n")
-print("************************************\n")
+print(f"Stage 2 completed. It took {stop - start} seconds.\n".center(column_size))
+print(asterisk_fill + "\n")
+
+
 
 """
 Stage 3: Write interpolated bathymetry and deformation to corresponding netCDF files
 """
-print("Entering Stage 3: writing output.\n")
-print("************************************")
+print("Entering Stage 3: writing output.\n".center(column_size))
+print(asterisk_fill + "\n")
 
 start = time.time()
 
 writeBathy.write_interpolatedBathy(interpolated_bathymetry, donor_x, donor_y, casename,  Ntime=np.shape(eg_deformation)[0])
-writeUplift.write_deformation(eg_deformation, donor_x, donor_y, args.receiver, args.donor[0], filtername, casename, spatial_resolution)
+writeUplift.write_deformation(eg_deformation, donor_x, donor_y, donor_time, args.receiver, args.donor, filtername, casename, spatial_resolution)
 
 stop = time.time()
-print(f"\nStage 3 completed (it took {stop - start} seconds).\n")
-print("************************************\n")
+print(f"Stage 3 completed. It took {stop - start} seconds.\n".center(column_size))
+print(asterisk_fill + "\n")
+
+

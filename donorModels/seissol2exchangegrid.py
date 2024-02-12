@@ -1,12 +1,14 @@
-import vtk
-from vtk.util import numpy_support
 import numpy as np
-import seissolxdmf
+import os
 import time
-import argparse
-from pyproj import Transformer
+import seissolxdmf
+import vtk
 
-# TODO: potentially set up inputCRS as input
+from pyproj import Transformer
+from vtk.util import numpy_support
+
+#TODO Lon/Lat for the bottom left coordinates of the domain should be provided by some way within the SeisSol output. Will be used for inputCRS. 
+# TODO: include correct times
 
 """
 Module for the SeisSol donor functionalities.
@@ -17,12 +19,16 @@ Contains the following functionalities:
 * project_coordinates                     project coordinates to WGS84 coordinates
 * setUp_grid_interpolation             set up grid and interpolation structures 
 * get_interpolation                         perform the interpolation on the data
-* interpolate_Seissol2structured    main routine
+* interpolate_seissol2structured    main routine
 * get_seissol                                   parent routine that is called from the main donorModel routine
 """
 
 # Global parameters
 basicCRS = 'epsg:4326' # basic lat-lon coordinate system
+
+# Some definitions for a nice print on the terminal
+column_size = os.get_terminal_size().columns
+asterisk_fill = "*" * column_size
 
 
 class seissolxdmfExtended(seissolxdmf.seissolxdmf):
@@ -35,7 +41,7 @@ class seissolxdmfExtended(seissolxdmf.seissolxdmf):
     xyz = self.ReadGeometry()
     points = vtk.vtkPoints()
     if ndim2 == 3:
-        print("Surface output, assuming the grid is at z=0")
+        print("Surface output, assuming the grid is at z=0".center(column_size))
         xyz[:, 2] = 0.0
     points.SetData(numpy_support.numpy_to_vtk(xyz))
 
@@ -159,7 +165,7 @@ def get_interpolation(sx, unstrGrid3d, probeFilter, projDataShape, timestep, var
   start = time.time()
   probeFilter.Update()
   stop = time.time()
-  print(f"{varName} {timestep}: done probe filter in {stop - start} s.")
+  print(f"{varName} {timestep}: done probe filter in {stop - start} s.".center(column_size))
 
   polyout = probeFilter.GetOutput()
   projData = polyout.GetPointData().GetScalars()
@@ -169,7 +175,7 @@ def get_interpolation(sx, unstrGrid3d, probeFilter, projDataShape, timestep, var
   
   
   
-def interpolate_Seissol2structured(sx, dx, coord_min, coord_max, include_horizontal):
+def interpolate_seissol2structured(sx, dx, coord_min, coord_max, include_horizontal):
   """
   Interpolate the SeisSol XDMF to VTK.
   
@@ -199,28 +205,35 @@ def interpolate_Seissol2structured(sx, dx, coord_min, coord_max, include_horizon
 
   # List for interpolated data
   probedData = []
-
+  time_dummy = []
+  
   # Perform interpolation (over each timestep and each variable)
-  print("Interpolation is performed using VTK probe filter.")
+  print("Interpolation is performed using VTK probe filter.".center(column_size))
   for timestep in range(nTime):
-      for varName in data:
-          projDataNp = get_interpolation(sx, unstrGrid3d, probeFilter, projDataShape, timestep, varName)
-          probedData.append(projDataNp)
+    time_dummy.append(timestep)
+    for varName in data:
+      projDataNp = get_interpolation(sx, unstrGrid3d, probeFilter, projDataShape, timestep, varName)
+      probedData.append(projDataNp)
  
-  return probedData, x_proj, y_proj
+  return probedData, x_proj, y_proj, time_dummy
 
 
 
-def get_seissol(filename, spatial_resolution, include_horizontal):
+def get_seissol(filename, spatial_resolution, CRS_reference_coordinates, include_horizontal):
   """
   Actual part that will be used by the main donor model functionality to get the deformation data.
   
   :param filename: filename for the SeisSol data (has to be an XDMF file)
   :param spatial_resolution: spatial_resolution in meters
+  :param CRS_reference_coordinates: CRS reference coordinates (list of longitude and latitude of lower left corner of the domain)  
   :param include_horizontal: boolean handle whether the output will only contain the vertical deformation (deformation) or also include the horizontal deformation
   """
   
-  print("Getting output data from SeisSol.\n")
+  # CRS of the 2d mesh
+  inputCRS = "+proj=tmerc +datum=WGS84 +k=0.9996 +lon_0=" + CRS_reference_coordinates[0] + \
+                      " +lat_0=" + CRS_reference_coordinates[1]  
+  
+  print("Getting output data from SeisSol.\n".center(column_size))
   
   sx = seissolxdmfExtended(filename) # get seissolxdmf from provided XDMF file
   
@@ -229,6 +242,6 @@ def get_seissol(filename, spatial_resolution, include_horizontal):
   coordinate_min = np.round(geom.min(0) +  spatial_resolution, -4) 
   coordinate_max = np.round(geom.max(0) -  spatial_resolution, -4) 
 
-  donor_deformation, donor_x, donor_y = interpolate_Seissol2structured(sx, spatial_resolution, coordinate_min, coordinate_max, include_horizontal)
+  donor_deformation, donor_x, donor_y, donor_time = interpolate_seissol2structured(sx, spatial_resolution, coordinate_min, coordinate_max, include_horizontal)
 
-  return donor_deformation, donor_x, donor_y
+  return donor_deformation, donor_x, donor_y, donor_time

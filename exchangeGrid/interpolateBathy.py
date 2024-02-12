@@ -1,7 +1,9 @@
 import numpy as np
+import os
+import time
+
 from netCDF4 import Dataset
 from scipy.interpolate import RectBivariateSpline
-import time
 
 """
 Functionality to get the interpolated bathymetry (deformation taken into account)
@@ -10,6 +12,11 @@ Contains the following functionalities:
 
 * get_interpolatedBathy   interpolate the bathymetry data to exchange grid and add the deformation for each timestep
 """
+
+# Some definitions for a nice print on the terminal
+column_size = os.get_terminal_size().columns
+asterisk_fill = "*" * column_size
+
 
 def get_interpolatedBathy(bathy_file, donor_x, donor_y, donor_deformation):
   """
@@ -38,13 +45,13 @@ def get_interpolatedBathy(bathy_file, donor_x, donor_y, donor_deformation):
 
   # Interpolate bathymetry to SeisSol grid
   start = time.time()
-  print("Starting the interpolation (bathymetry).")
+  print("Starting the interpolation (bathymetry).".center(column_size))
   
   # Calculate updated bathymetry (add the deformation for every timestep)
   interpolated_bathy = []
   for t in range(Ntime):
     interpolated_bathy.append(interpolator(donor_y, donor_x) - donor_deformation[t])
   stop = time.time()
-  print(f"The interpolation took {stop - start} s\n")
+  print(f"The interpolation took {stop - start} s\n".center(column_size))
   
   return interpolated_bathy 
