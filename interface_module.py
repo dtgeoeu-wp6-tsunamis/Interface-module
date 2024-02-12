@@ -13,16 +13,14 @@ Input was provided by:
   * Alex González (UMA)
   * Alexis Marboeuf (IPGP)
 
-Versions: 
-0.1 (10/23) M. Bänsch (UHAM)    Initial version (SeisSol to HySEA)
-0.2 (12/23) M. Bänsch (UHAM)    Added Kajiura Filter; some renaming
+Latest changes made in 02/24 by M. Bänsch (UHAM)
 
 *** Instructions for this module ***
 
 This script can be run from the command line and needs some additional arguments.
 
 How to run the script: 
-  python interface_module.py --donor donor_model donor_output bathy_file resolution (--receiver receiver_model --filter filter --casename casename)
+  python interface_module.py --donor donor_model --CRS_reference lon, lat donor_output bathy_file resolution (--receiver receiver_model --filter filter --casename casename)
 
 Arguments that need/can to be provided:
   * --donor donor_model           where donor_model = seissol, shaltop, bingclaw (all lower case!) 
