@@ -23,7 +23,7 @@ How to run the script:
 
 Arguments that need/can to be provided:
   * --donor donor_model           where donor_model = seissol, shaltop, bingclaw (all lower case!) 
-  *--CRS_reference                    CRS coordinates reference (lon, lat of lower left corner of domain)
+  * --CRS_reference                    CRS coordinates reference (lon, lat of lower left corner of domain)
   * donor_output                       name of the output file or path from the donor model
   * bathy_file                             name of the bathymetry file. Domain has to be larger compared to the domain from the donor model
   * resolution                             spatial resolution for the interpolation (will be used for both x- and y-coordinates)
@@ -51,6 +51,5 @@ Non-standard packages:
   * vtk
 
 # To Dos:
-  * Correct time output for SeisSol 
   * CRS references for SeisSol and SHALTOP need to be implemented and then included in the interface module
   * (potentially) include parameter file support

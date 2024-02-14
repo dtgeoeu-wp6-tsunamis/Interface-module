@@ -8,7 +8,6 @@ from pyproj import Transformer
 from vtk.util import numpy_support
 
 #TODO Lon/Lat for the bottom left coordinates of the domain should be provided by some way within the SeisSol output. Will be used for inputCRS. 
-# TODO: include correct times
 
 """
 Module for the SeisSol donor functionalities.
@@ -16,11 +15,12 @@ Module for the SeisSol donor functionalities.
 Contains the following functionalities:
 
 * seissolxdmf                                 class definition
+* get_seissol_time                          function to get time values of SeisSol output
 * project_coordinates                     project coordinates to WGS84 coordinates
 * setUp_grid_interpolation             set up grid and interpolation structures 
 * get_interpolation                         perform the interpolation on the data
 * interpolate_seissol2structured    main routine
-* get_seissol                                   parent routine that is called from the main donorModel routine
+* get_seissol                                  parent routine that is called from the main donorModel routine
 """
 
 # Global parameters
@@ -67,6 +67,26 @@ class seissolxdmfExtended(seissolxdmf.seissolxdmf):
   
   
   
+def get_seissol_time(sx):
+  """
+  Function to read the time data from the seissolxdmf file
+  
+  :param sx: seissolxdmf file
+  """
+  
+  time_array = np.zeros(sx.ReadNdt())
+  root = sx.tree.getroot()
+  i = 0
+  for Property in root.findall("Domain/Grid/Grid/Time"):
+    if i == 0:
+      time_array[i] = float(Property.get("Value"))
+      i = 1
+    else:
+      time_array[i] = float(Property.get("Value")) 
+  return time_array
+
+
+
 def project_coordinates(x, y, inputCRS):
   """
   This function takes the input x and y coordinates and returns the transformed WGS84 coordinates.
@@ -203,19 +223,20 @@ def interpolate_seissol2structured(sx, dx, coord_min, coord_max, include_horizon
   # Create probe filter and get projected coordinates
   probeFilter, projDataShape, x_proj, y_proj = setUp_grid_interpolation(coord_min, coord_max, dx, inputCRS)
 
+  # Read time data from seissolxdmf file
+  seissol_time = get_seissol_time´(sx)
+ 
   # List for interpolated data
   probedData = []
-  time_dummy = []
   
   # Perform interpolation (over each timestep and each variable)
   print("Interpolation is performed using VTK probe filter.".center(column_size))
   for timestep in range(nTime):
-    time_dummy.append(timestep)
     for varName in data:
       projDataNp = get_interpolation(sx, unstrGrid3d, probeFilter, projDataShape, timestep, varName)
       probedData.append(projDataNp)
  
-  return probedData, x_proj, y_proj, time_dummy
+  return probedData, x_proj, y_proj, seissol_time
 
 
 
