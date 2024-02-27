@@ -27,7 +27,7 @@ Arguments that need/can to be provided:
   * --CRS_reference                    CRS coordinates reference (lon, lat of lower left corner of domain)
   * donor_output                       name of the output file or path from the donor model
   * bathy_file                             name of the bathymetry file. Domain has to be larger compared to the domain from the donor model
-  * resolution                             spatial resolution for the interpolation (will be used for both x- and y-coordinates)
+  * resolution                             spatial resolution the donor output will be interpolated to (will be used for both x- and y-coordinates; has to be provided in meters)
   * --receiver receiver_model     (optional) receiver model (as of now, only hysea is available)
   * --filter filter                          (optional) filter for the deformation data where filter = none, kajiura; default: none
   * --casename casename        (optional) string to append the filename with 

@@ -32,9 +32,14 @@ def get_interpolatedBathy(bathy_file, donor_x, donor_y, donor_deformation):
   bathy_data = Dataset(bathy_file, 'r', format='NETCDF4')
 
   # get values from bathymetry file
-  bathy_x = bathy_data.variables['x']
-  bathy_y = bathy_data.variables['y']
-  bathy = bathy_data.variables['z']
+  try:
+    bathy_x = bathy_data.variables['x']
+    bathy_y = bathy_data.variables['y']
+    bathy = bathy_data.variables['z']
+  except:
+    bathy_x = bathy_data.variables['lon']
+    bathy_y = bathy_data.variables['lat']
+    bathy = bathy_data.variables['elevation']
 
   # Create interpolation class 
   # Note that x and y-coordinates are flipped due to the storage in the netCDF file

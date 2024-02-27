@@ -224,7 +224,7 @@ def interpolate_seissol2structured(sx, dx, coord_min, coord_max, include_horizon
   probeFilter, projDataShape, x_proj, y_proj = setUp_grid_interpolation(coord_min, coord_max, dx, inputCRS)
 
   # Read time data from seissolxdmf file
-  seissol_time = get_seissol_time´(sx)
+  seissol_time = get_seissol_time(sx)
  
   # List for interpolated data
   probedData = []
