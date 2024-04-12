@@ -137,7 +137,7 @@ print(asterisk_fill + "\n")
 
 start = time.time()
 
-writeBathy.write_interpolatedBathy(interpolated_bathymetry, donor_x, donor_y, casename,  Ntime=np.shape(eg_deformation)[0])
+writeBathy.write_interpolatedBathy(args.receiver, interpolated_bathymetry, donor_x, donor_y, casename,  Ntime=np.shape(eg_deformation)[0])
 writeUplift.write_deformation(eg_deformation, donor_x, donor_y, donor_time, args.receiver, args.donor, filtername, casename, spatial_resolution)
 
 stop = time.time()
