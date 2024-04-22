@@ -12,7 +12,7 @@ Input was provided by:
   * Alex González (UMA)
   * Alexis Marboeuf (IPGP)
 
-Latest changes made in 02/24 by M. Bänsch (UHAM)
+Latest changes made in 04/24 by M. Bänsch (UHAM)
 
 ## Instructions for this module
 
