@@ -83,6 +83,7 @@ def get_seissol_time(sx):
       i = 1
     else:
       time_array[i] = float(Property.get("Value")) 
+      i += 1
   return time_array
 
 
@@ -217,9 +218,6 @@ def interpolate_seissol2structured(sx, dx, coord_min, coord_max, include_horizon
   else:
     data = ['u3']    
   
-  # Set up the inputCRS   
-  inputCRS = "+proj=tmerc +datum=WGS84 +k=0.9996 +lon_0=26.25 +lat_0=37.75"  # CRS of the input 2d mesh
-
   # Create probe filter and get projected coordinates
   probeFilter, projDataShape, x_proj, y_proj = setUp_grid_interpolation(coord_min, coord_max, dx, inputCRS)
 

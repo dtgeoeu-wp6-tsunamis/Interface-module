@@ -28,7 +28,10 @@ def write2hysea(eg_deformation, eg_x, eg_y, eg_time, donor, filtername, casename
   
   if (filtername == 'none'):
     filtername = 'unfiltered'
-  deformationfile = f"{casename}_{donor}_{filtername}_dx{int(spatial_resolution)}_deformation.nc"
+  if (spatial_resolution > 0.0):
+    deformationfile = f"{casename}_{donor}_{filtername}_dx{int(spatial_resolution)}_deformation.nc"
+  else:
+    deformationfile = f"{casename}_{donor}_{filtername}_deformation.nc"    
   Nrow = len(eg_y)
   Ncolumn = len(eg_x)
   Ntime = np.shape(eg_deformation)[0]

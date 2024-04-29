@@ -28,10 +28,10 @@ def get_interpolatedBathy(bathy_file, donor_x, donor_y, donor_deformation):
   :param donor_deformation: deformation to calculate the actual (new) bathymetry 
   """
 
-  # load bathy and SeisSol data
+  # Load bathy and donor data
   bathy_data = Dataset(bathy_file, 'r', format='NETCDF4')
 
-  # get values from bathymetry file
+  # Get values from bathymetry file
   try:
     bathy_x = bathy_data.variables['x']
     bathy_y = bathy_data.variables['y']
@@ -48,7 +48,7 @@ def get_interpolatedBathy(bathy_file, donor_x, donor_y, donor_deformation):
   # Get number of deformation timesteps
   Ntime = np.shape(donor_deformation)[0] 
 
-  # Interpolate bathymetry to SeisSol grid
+  # Interpolate bathymetry to donor grid
   start = time.time()
   print("Starting the interpolation (bathymetry).".center(column_size))
   

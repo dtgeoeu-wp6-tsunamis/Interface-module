@@ -27,7 +27,7 @@ Arguments that need/can to be provided:
   * --CRS_reference                    CRS coordinates reference (lon, lat of lower left corner of domain)
   * donor_output                       name of the output file or path from the donor model
   * bathy_file                             name of the bathymetry file. Domain has to be larger compared to the domain from the donor model
-  * resolution                             spatial resolution the donor output will be interpolated to (will be used for both x- and y-coordinates; has to be provided in meters)
+  * resolution                             (optional) spatial resolution the donor output will be interpolated to (will be used for both x- and y-coordinates; has to be provided in meters)
   * --receiver receiver_model     (optional) receiver model (as of now, only hysea is available)
   * --filter filter                          (optional) filter for the deformation data where filter = none, kajiura; default: none
   * --casename casename        (optional) string to append the filename with 
@@ -39,7 +39,7 @@ Regarding the donor_output, note that SeisSol requires a filename, while Bingcla
 import argparse
 import time
 import donorModels.donorInterface as donorInterface
-import exchangeGrid.interpolateBathy as interpolateBathy
+import exchangeGrid.exchangeGridCreation as exchangeGridCreation
 import exchangeGrid.filter as filtering
 import receiverModel.writeInterpolatedBathy as writeBathy
 import receiverModel.writeDeformation as writeUplift
@@ -71,9 +71,10 @@ parser.add_argument(
     "-r", "--receiver",
     help="receiver model; hysea (all lower case)",
     default="hysea",)
-parser.add_argument("resolution", help="spatial resolution for both horizontal directions (in m)" )
+parser.add_argument("--resolution", help="spatial resolution for both horizontal directions (in m)", 
+    default=0.0)
 parser.add_argument("--include_horizontal_deformation", 
-    help="spatial resolution for the interpolation (will be used for both x- and y-coordinates)", 
+    help="horizontal deformation handle (for SeisSol)", 
     default=False)
 parser.add_argument("-f", "--filter", 
     help="filter for the deformation data where filter = none, kajiura; default: none",
@@ -103,7 +104,7 @@ print(asterisk_fill + "\n")
 
 start = time.time()
 
-donor_deformation, donor_x, donor_y, donor_time = donorInterface.get_donorModel(args.donor, args.donor_output, spatial_resolution, CRS_reference, incl_horizontal)
+donor_deformation, donor_x, donor_y, donor_time, donor_bathy = donorInterface.get_donorModel(args.donor, args.donor_output, spatial_resolution, CRS_reference, args.bathy_file, incl_horizontal)
 
 stop = time.time()
 print((f"Stage 1 completed. It took {stop - start} seconds.\n").center(column_size))
@@ -111,7 +112,7 @@ print(asterisk_fill + "\n")
 
 
 """
-Stage 2: interpolate bathymetry data to same grid as the deformation. Filter the deformation if desired.
+Stage 2: Create exchange grid from donor and bathymetry coordinates, interpolate bathymetry data to same grid as the deformation (if necessary). Filter the deformation if desired.
 """
 
 print("Entering Stage 2: processing the data.\n".center(column_size))
@@ -120,8 +121,9 @@ print(asterisk_fill + "\n")
 
 start = time.time()
 
-interpolated_bathymetry = interpolateBathy.get_interpolatedBathy(args.bathy_file, donor_x, donor_y, donor_deformation)
-eg_deformation = filtering.filter_deformation(filtername, donor_deformation, interpolated_bathymetry, spatial_resolution)
+
+eg_tmp_deformation, eg_x, eg_y, eg_bathymetry =  exchangeGridInterface.createExchangeGrid(args.bathy_file, donor_x, donor_y, donor_deformation)
+eg_deformation = filtering.filter_deformation(filtername, eg_tmp_deformation, eg_bathymetry, spatial_resolution)
 
 stop = time.time()
 print(f"Stage 2 completed. It took {stop - start} seconds.\n".center(column_size))
@@ -137,8 +139,9 @@ print(asterisk_fill + "\n")
 
 start = time.time()
 
-writeBathy.write_interpolatedBathy(args.receiver, interpolated_bathymetry, donor_x, donor_y, casename,  Ntime=np.shape(eg_deformation)[0])
-writeUplift.write_deformation(eg_deformation, donor_x, donor_y, donor_time, args.receiver, args.donor, filtername, casename, spatial_resolution)
+if (spatial_resolution > 0.0):
+  writeBathy.write_interpolatedBathy(args.receiver, eg_bathymetry, eg_x, eg_y, casename,  Ntime=np.shape(eg_deformation)[0])
+writeUplift.write_deformation(eg_deformation, eg_x, eg_y, donor_time, args.receiver, args.donor, filtername, casename, spatial_resolution)
 
 stop = time.time()
 print(f"Stage 3 completed. It took {stop - start} seconds.\n".center(column_size))

@@ -2,4 +2,4 @@
 Interface module - exchange grid functionalities 
 """
 
-__all__ = ["filter", "interpolateBathy"]
+__all__ = ["exchangeGridCreation", "filter", "interpolateBathy"]
