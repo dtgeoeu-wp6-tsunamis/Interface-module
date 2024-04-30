@@ -98,14 +98,18 @@ def project_coordinates(x, y, inputCRS):
   """
   transformer = Transformer.from_crs(inputCRS, basicCRS, always_xy=True)
 
-    # transform x-coordinates
-  y_lowerRow = np.repeat(y[0], len(x))
-  xnew, ynew = transformer.transform(x, y_lowerRow)
+  # move x- and y-coordinates so that the lower left corner lies at [0,0]
+  x_tmp = x + np.abs(x[0])
+  y_tmp = y + np.abs(y[0])
+  
+  # transform x-coordinates
+  y_lowerRow = np.repeat(y_tmp[0], len(x))
+  xnew, ynew = transformer.transform(x_tmp, y_lowerRow)
   x_proj = xnew  
     
     # transform y-coordinates
-  x_leftColumn = np.repeat(x[0], len(y))
-  xnew, ynew = transformer.transform(x_leftColumn, y)
+  x_leftColumn = np.repeat(x_tmp[0], len(y))
+  xnew, ynew = transformer.transform(x_leftColumn, y_tmp)
   y_proj = ynew
 
   return x_proj, y_proj
@@ -131,7 +135,7 @@ def setUp_grid_interpolation(coord_min, coord_max, dx, inputCRS):
 
   # project the x and y coordinates to lat/lon
   x_proj, y_proj = project_coordinates(x, y, inputCRS)
-
+  
   # Create grid image volume
   imageSize = [x.shape[0], y.shape[0], z.shape[0]]
   imageOrigin = [coord_min[0], coord_min[1], coord_min[2]]
@@ -196,7 +200,7 @@ def get_interpolation(sx, unstrGrid3d, probeFilter, projDataShape, timestep, var
   
   
   
-def interpolate_seissol2structured(sx, dx, coord_min, coord_max, include_horizontal):
+def interpolate_seissol2structured(sx, dx, coord_min, coord_max, inputCRS, include_horizontal):
   """
   Interpolate the SeisSol XDMF to VTK.
   
@@ -204,6 +208,7 @@ def interpolate_seissol2structured(sx, dx, coord_min, coord_max, include_horizon
   :param dx: spatial resolution
   :param coord_min: minimum coordinates for box
   :param coord_max: maximum coordinates for box
+  :param inputCRS:  CRS of the input 2d mesh 
   :param include_horizontal: handle whether to interpolate only the vertical component or not
   
   returns deformation data and coordinates
@@ -256,11 +261,11 @@ def get_seissol(filename, spatial_resolution, CRS_reference_coordinates, include
   
   sx = seissolxdmfExtended(filename) # get seissolxdmf from provided XDMF file
   
-  # Get x, y and z interval min/max and round to nearest 1000 (if not done, the interpolation does nothing)
+  # Get x, y and z interval min/max 
   geom = sx.ReadGeometry()
-  coordinate_min = np.round(geom.min(0) +  spatial_resolution, -4) 
-  coordinate_max = np.round(geom.max(0) -  spatial_resolution, -4) 
-
-  donor_deformation, donor_x, donor_y, donor_time = interpolate_seissol2structured(sx, spatial_resolution, coordinate_min, coordinate_max, include_horizontal)
+  coordinate_min = geom.min(0)
+  coordinate_max = geom.max(0) 
+  
+  donor_deformation, donor_x, donor_y, donor_time = interpolate_seissol2structured(sx, spatial_resolution, coordinate_min, coordinate_max, inputCRS, include_horizontal)
 
   return donor_deformation, donor_x, donor_y, donor_time

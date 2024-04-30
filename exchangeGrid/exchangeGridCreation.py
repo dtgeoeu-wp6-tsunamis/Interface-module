@@ -96,6 +96,7 @@ def donor2bathyDomain(bathy_file, donor_x, donor_y, donor_deformation):
   return exchange_grid_deformation, exchange_grid_x, exchange_grid_y
 
 
+
 #**********************************************************************************
 # Generic function to create the exchange grid
 def createExchangeGrid(bathy_file, donor_x, donor_y, donor_deformation, only_donor_domain):

@@ -11,6 +11,7 @@ Contains the following functionalities:
 * donor_chooseResolution  checks resolution (if 0) and outputs bathymetry
 """
 
+
 def get_bathyResolutionlnMeters(bathy_resolution):
   """
   Calculate bathymetry resolution in m (from transformation).
@@ -28,6 +29,7 @@ def get_bathyResolutionlnMeters(bathy_resolution):
   resolution_in_m = transformer.transform(bathy_resolution, 1.)[0]
   
   return resolution_in_m
+
 
 
 def donor_chooseResolution(spatial_resolution, bathy_file):
