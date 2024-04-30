@@ -20,17 +20,19 @@ Latest changes made in 04/24 by M. Bänsch (UHAM)
 This script can be run from the command line and needs some additional arguments.
 
 How to run the script: 
-  python interface_module.py --donor donor_model --CRS_reference lon, lat donor_output bathy_file resolution (--receiver receiver_model --filter filter --casename casename)
+  python interface_module.py --donor donor_model --CRS_reference lon, lat donor_output bathy_file (--resolution resolution --only_donor_domain --receiver receiver_model --filter filter --casename casename --include_horizontal_deformation)
 
 Arguments that need/can to be provided:
   * --donor donor_model           where donor_model = seissol, shaltop, bingclaw (all lower case!) 
   * --CRS_reference                    CRS coordinates reference (lon, lat of lower left corner of domain)
   * donor_output                       name of the output file or path from the donor model
   * bathy_file                             name of the bathymetry file. Domain has to be larger compared to the domain from the donor model
-  * resolution                             (optional) spatial resolution the donor output will be interpolated to (will be used for both x- and y-coordinates; has to be provided in meters)
+  * --resolution resolution:          (optional) spatial resolution the donor output will be interpolated to (will be used for both x- and y-coordinates; has to be provided in meters)
+  * --only_donor_domain          (optional) handle to only use the domain given by the donor model (False by default)
   * --receiver receiver_model     (optional) receiver model (as of now, only hysea is available)
   * --filter filter                          (optional) filter for the deformation data where filter = none, kajiura; default: none
   * --casename casename        (optional) string to append the filename with 
+  * --include_horizontal_deformation     (optional) handle whether to include horizontal deformations (False by default; only for SeisSol)
 
 Regarding the donor_output, note that SeisSol requires a filename, while Bingclaw requires the path to the directory where the (ESRI ASCII) output files are located
 """
@@ -73,8 +75,8 @@ parser.add_argument(
     default="hysea",)
 parser.add_argument("--resolution", help="spatial resolution for both horizontal directions (in m)", 
     default=0.0)
-parser.add_argument("--include_horizontal_deformation", 
-    help="horizontal deformation handle (for SeisSol)", 
+parser.add_argument("--only_donor_domain", 
+    help="handle to only use the domain given by the donor model; default: False", 
     default=False)
 parser.add_argument("-f", "--filter", 
     help="filter for the deformation data where filter = none, kajiura; default: none",
@@ -82,9 +84,13 @@ parser.add_argument("-f", "--filter",
 parser.add_argument("-c", "--casename", 
     help="string to append the filename with",
     default='src2waveOut')
+parser.add_argument("--include_horizontal_deformation", 
+    help="horizontal deformation handle (for SeisSol)", 
+    default=False)
 
 args = parser.parse_args()
 spatial_resolution = float(args.resolution)
+only_donor_domain = args.only_donor_domain
 incl_horizontal = args.include_horizontal_deformation
 filtername = args.filter
 casename = args.casename
@@ -122,7 +128,7 @@ print(asterisk_fill + "\n")
 start = time.time()
 
 
-eg_tmp_deformation, eg_x, eg_y, eg_bathymetry =  exchangeGridInterface.createExchangeGrid(args.bathy_file, donor_x, donor_y, donor_deformation)
+eg_tmp_deformation, eg_x, eg_y, eg_bathymetry =  exchangeGridCreation.createExchangeGrid(args.bathy_file, donor_x, donor_y, donor_deformation, only_donor_domain)
 eg_deformation = filtering.filter_deformation(filtername, eg_tmp_deformation, eg_bathymetry, spatial_resolution)
 
 stop = time.time()

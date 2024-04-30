@@ -98,7 +98,7 @@ def donor2bathyDomain(bathy_file, donor_x, donor_y, donor_deformation):
 
 #**********************************************************************************
 # Generic function to create the exchange grid
-def createExchangeGrid(bathy_file, donor_x, donor_y, donor_deformation):
+def createExchangeGrid(bathy_file, donor_x, donor_y, donor_deformation, only_donor_domain):
   """
   Write the given donor deformation to a structured mesh similar to the bathymetry grid.
   
@@ -106,8 +106,15 @@ def createExchangeGrid(bathy_file, donor_x, donor_y, donor_deformation):
   :param donor_x: x/lon-coordinates of the donor mesh 
   :param donor_y: y/lat-coordinates of the donor mesh 
   :param donor_deformation: deformation to calculate the actual (new) bathymetry 
+  :param only_donor_domain: handle to only use the domain given by the donor model
   """
   
-  exchange_grid_deformation, exchange_grid_x, exchange_grid_y = donor2bathyDomain(bathy_file, donor_x, donor_y, donor_deformation)
+  # Check if only donor domain should be used
+  if (only_donor_domain):
+    exchange_grid_deformation = donor_deformation
+    exchange_grid_x = donor_x
+    exchange_grid_y = donor_y
+  else:
+    exchange_grid_deformation, exchange_grid_x, exchange_grid_y = donor2bathyDomain(bathy_file, donor_x, donor_y, donor_deformation)
   interpolated_bathymetry = get_interpolatedBathy(bathy_file, exchange_grid_x, exchange_grid_y, exchange_grid_deformation)
   return exchange_grid_deformation, exchange_grid_x, exchange_grid_y, interpolated_bathymetry
