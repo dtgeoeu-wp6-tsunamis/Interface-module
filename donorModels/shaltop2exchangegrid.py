@@ -14,8 +14,15 @@ from scipy.spatial import KDTree
 """
 Module for the SHALTOP donor functionalities.
 
-This module reads the water colum height from a provided SHALTOP data directory. The correct have to be computed from the mesh normal vectors due to SHALTOP's local coordinates.
-Assumes a nearest neighbor approach for the meshing for efficiency reasons. The SHALTOP HySEA coupling written by Alexis Marboeuf allows for more options (see GitHub).
+This module reads the water colum height from a provided SHALTOP data directory. The correct height has to be computed from the mesh normal vectors due to SHALTOP's local coordinates.
+The module assumes a nearest neighbor approach for the meshing for efficiency reasons. The SHALTOP HySEA coupling written by Alexis Marboeuf allows for more options (see GitHub).
+
+The SHALTOP data directory produces several output files and the following are required:
+* plotmat.dat (to read parameter data)
+* time_im.d (times for which data is written),
+* grillexw.d and grilleyw.d (provide the x- and y-coordinates)
+* z.d (for bathymetry) and finally 
+* rho.bin (which contains the actual height data, but in local coordinates)
 
 Contains the following functionalities:
 
