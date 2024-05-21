@@ -214,7 +214,6 @@ def use_kajiura_filter(deformation, bathymetry, spatial_resolution):
   
   for t in range(Ntime):
     start = time.time()  
-    print(f"Filter is in timestep {t+1:{frmt}d} of {Ntime}.".center(column_size))
     
     current_bathymetry = bathymetry[t]
     current_deformation = deformation[t]
@@ -223,6 +222,8 @@ def use_kajiura_filter(deformation, bathymetry, spatial_resolution):
     maxdeform_indices = np.unravel_index(np.argmax(np.abs(current_deformation), axis=None), (Ny, Nx))
     # Set up bathymetry at largest deformation as Kajiura depth
     kajiura_depth = np.abs(current_bathymetry[maxdeform_indices[0], maxdeform_indices[1]])
+    
+    print(f"Filter is in timestep {t+1:{frmt}d} of {Ntime} with a filtering depth of {kajiura_depth} m.".center(column_size))
 
     # Start filterting
     current_η[:] = 0.0
