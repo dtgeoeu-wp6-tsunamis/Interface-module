@@ -20,7 +20,7 @@ Latest changes made in 04/24 by M. Bänsch (UHAM)
 This script can be run from the command line and needs some additional arguments.
 
 How to run the script: 
-  python interface_module.py --donor donor_model --CRS_reference lon, lat donor_output bathy_file (--resolution resolution --only_donor_domain --receiver receiver_model --filter filter --casename casename --include_horizontal_deformation)
+  python interface_module.py --donor donor_model --CRS_reference lon, lat donor_output bathy_file (--resolution resolution --only_donor_domain --receiver receiver_model --filter filter --filtering_depth filtering_depth --casename casename --include_horizontal_deformation)
 
 Arguments that need/can to be provided:
   * --donor donor_model           where donor_model = seissol, shaltop, bingclaw (all lower case!) 
@@ -31,6 +31,7 @@ Arguments that need/can to be provided:
   * --only_donor_domain          (optional) handle to only use the domain given by the donor model (False by default)
   * --receiver receiver_model     (optional) receiver model (as of now, only hysea is available)
   * --filter filter                          (optional) filter for the deformation data where filter = none, kajiura; default: none
+  * --filtering_depth filtering_depth (optional) filtering/Kajiura depth (in m) that is used within the filter.
   * --casename casename        (optional) string to append the filename with 
   * --include_horizontal_deformation     (optional) handle whether to include horizontal deformations (False by default; only for SeisSol)
 
@@ -81,6 +82,9 @@ parser.add_argument("--only_donor_domain",
 parser.add_argument("-f", "--filter", 
     help="filter for the deformation data where filter = none, kajiura; default: none",
     default='none')
+parser.add_argument("--filtering_depth", 
+    help="filtering/Kajiura depth (in m) that is used within the filter; default: 0",
+    default=0.0)
 parser.add_argument("-c", "--casename", 
     help="string to append the filename with",
     default='src2waveOut')
@@ -93,6 +97,7 @@ spatial_resolution = float(args.resolution)
 only_donor_domain = args.only_donor_domain
 incl_horizontal = args.include_horizontal_deformation
 filtername = args.filter
+filtering_depth = float(args.filtering_depth)
 casename = args.casename
 CRS_reference = args.CRS_reference
 
@@ -110,7 +115,7 @@ print(asterisk_fill + "\n")
 
 start = time.time()
 
-donor_deformation, donor_x, donor_y, donor_time, donor_bathy = donorInterface.get_donorModel(args.donor, args.donor_output, spatial_resolution, CRS_reference, args.bathy_file, incl_horizontal)
+donor_deformation, donor_x, donor_y, donor_time, donor_bathy, eg_resolution = donorInterface.get_donorModel(args.donor, args.donor_output, spatial_resolution, CRS_reference, args.bathy_file, incl_horizontal)
 
 stop = time.time()
 print((f"Stage 1 completed. It took {stop - start} seconds.\n").center(column_size))
@@ -129,7 +134,7 @@ start = time.time()
 
 
 eg_tmp_deformation, eg_x, eg_y, eg_bathymetry =  exchangeGridCreation.createExchangeGrid(args.bathy_file, donor_x, donor_y, donor_deformation, only_donor_domain)
-eg_deformation = filtering.filter_deformation(filtername, eg_tmp_deformation, eg_bathymetry, spatial_resolution)
+eg_deformation = filtering.filter_deformation(filtername, eg_tmp_deformation, eg_bathymetry, eg_resolution, filtering_depth)
 
 stop = time.time()
 print(f"Stage 2 completed. It took {stop - start} seconds.\n".center(column_size))

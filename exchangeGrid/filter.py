@@ -182,13 +182,14 @@ def apply_kajiura_fft(bathymetry, deformation, η, h_max, Δx, Δy, precalc_σ, 
   
   
 
-def use_kajiura_filter(deformation, bathymetry, spatial_resolution):
+def use_kajiura_filter(deformation, bathymetry, spatial_resolution, filtering_depth):
   """
   Functionality for the Kajiura filter
   
   :param deformation: deformation data from the donor model
   :param bathymetry: bathymetry data (interpolated and updated with deformation)
   :param spatial_resolution: spatial resolution for both longitude and latitude direction    
+  :param filtering_depth: filtering depth that is used within the Kajiura filter
   """
   
   Ntime = np.shape(deformation)[0] # number of timesteps
@@ -218,10 +219,13 @@ def use_kajiura_filter(deformation, bathymetry, spatial_resolution):
     current_bathymetry = bathymetry[t]
     current_deformation = deformation[t]
     
-    # Get indices for location of largest deformation and use those to define Kajiura depth
-    maxdeform_indices = np.unravel_index(np.argmax(np.abs(current_deformation), axis=None), (Ny, Nx))
-    # Set up bathymetry at largest deformation as Kajiura depth
-    kajiura_depth = np.abs(current_bathymetry[maxdeform_indices[0], maxdeform_indices[1]])
+    # Get indices for location of largest deformation and use those to define Kajiura depth if filtering_depth is zero and set kajiura_depth to filtering_depth otherwise
+    if (filtering_depth > 0.0):
+      kajiura_depth = filtering_depth
+    else:
+      maxdeform_indices = np.unravel_index(np.argmax(np.abs(current_deformation), axis=None), (Ny, Nx))
+      # Set up bathymetry at largest deformation as Kajiura depth
+      kajiura_depth = np.abs(current_bathymetry[maxdeform_indices[0], maxdeform_indices[1]])
     
     print(f"Filter is in timestep {t+1:{frmt}d} of {Ntime} with a filtering depth of {kajiura_depth} m.".center(column_size))
 
@@ -244,7 +248,7 @@ def use_kajiura_filter(deformation, bathymetry, spatial_resolution):
 
 #**********************************************************************************
 # Generic filtering function
-def filter_deformation(choose_filter, deformation, bathymetry, spatial_resolution):
+def filter_deformation(choose_filter, deformation, bathymetry, spatial_resolution, filtering_depth):
   """
   Generic filtering function. Needs type of filter (character: none or kajiura), as well as deformation and bathymetry as inputs.
    
@@ -252,12 +256,13 @@ def filter_deformation(choose_filter, deformation, bathymetry, spatial_resolutio
   :param deformation: deformation data from the donor model
   :param bathymetry: bathymetry data (interpolated and updated with deformation)
   :param spatial_resolution: spatial resolution for both longitude and latitude direction
+  :param filtering_depth: filtering depth that is used within the Kajiura filter
   """
   
   if (choose_filter == "kajiura"):
       print("Using a Kajiura filter for smoothing the deformation data.".center(column_size))
       start = time.time()
-      filtered_deformation = use_kajiura_filter(deformation, bathymetry, spatial_resolution)
+      filtered_deformation = use_kajiura_filter(deformation, bathymetry, spatial_resolution, filtering_depth)
       stop = time.time()
       print(f"The Kajiura filter took {stop - start} seconds.\n".center(column_size))
       return filtered_deformation

@@ -19,7 +19,7 @@ Latest changes made in 04/24 by M. Bänsch (UHAM)
 This script can be run from the command line and needs some additional arguments.
 
 How to run the script: 
-  python interface_module.py --donor donor_model --CRS_reference lon, lat donor_output bathy_file (--resolution resolution --only_donor_domain --receiver receiver_model --filter filter --casename casename --include_horizontal_deformation)
+  python interface_module.py --donor donor_model --CRS_reference lon, lat donor_output bathy_file (--resolution resolution --only_donor_domain --receiver receiver_model --filter filter --filtering_depth filtering_depth --casename casename --include_horizontal_deformation)
 
 Arguments that need/can to be provided:
   * --donor donor_model           where donor_model = seissol, shaltop, bingclaw (all lower case!) 
@@ -30,6 +30,7 @@ Arguments that need/can to be provided:
   * --only_donor_domain          (optional) handle to only use the domain given by the donor model (False by default)
   * --receiver receiver_model     (optional) receiver model (as of now, only hysea is available)
   * --filter filter                          (optional) filter for the deformation data where filter = none, kajiura; default: none
+  * --filtering_depth filtering_depth (optional) filtering/Kajiura depth (in m) that is used within the filter.
   * --casename casename        (optional) string to append the filename with 
   * --include_horizontal_deformation     (optional) handle whether to include horizontal deformations (False by default; only for SeisSol)
 

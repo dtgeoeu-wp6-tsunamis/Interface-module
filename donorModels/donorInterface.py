@@ -31,13 +31,13 @@ def get_donorModel(choose_donormodel, donor_output, spatial_resolution, CRS_refe
   # Choose corresponding donor model and get the deformation data
   if (choose_donormodel == 'bingclaw'):
     donor_deformation, donor_x, donor_y, donor_time = get_bingclaw(donor_output, resolution)
-    return donor_deformation, donor_x, donor_y, donor_time, donor_bathy
+    return donor_deformation, donor_x, donor_y, donor_time, donor_bathy, resolution
   if (choose_donormodel == 'seissol'):
     donor_deformation, donor_x, donor_y, donor_time = get_seissol(donor_output, resolution, CRS_reference, include_horizontal)
-    return donor_deformation, donor_x, donor_y, donor_time, donor_bathy
+    return donor_deformation, donor_x, donor_y, donor_time, donor_bathy, resolution
   if (choose_donormodel == 'shaltop'):
     donor_deformation, donor_x, donor_y, donor_time = get_shaltop(donor_output, resolution, CRS_reference)
-    return donor_deformation, donor_x, donor_y, donor_time, donor_bathy
+    return donor_deformation, donor_x, donor_y, donor_time, donor_bathy, resolution
   else:
     raise NotImplementedError("The provided donor model is unknown. Possible donor models include: bingclaw, seissol or shaltop")
 
