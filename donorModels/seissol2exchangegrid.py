@@ -218,10 +218,11 @@ def interpolate_seissol2structured(sx, dx, coord_min, coord_max, inputCRS, inclu
   nTime = sx.ReadNdt()  # number of time steps in the Seissol file
   
   # Choose which data interpolate (only vertical or all components) based on the input handle  
+  is_new_format = 'u3' in sx.ReadAvailableDataFields()
   if (include_horizontal):
-    data = ['u1', 'u2', 'u3']
+    data = ['u1', 'u2', 'u3'] if is_new_format else ['U', 'V', 'W']
   else:
-    data = ['u3']    
+    data = ['u3'] if is_new_format else ['W']   
   
   # Create probe filter and get projected coordinates
   probeFilter, projDataShape, x_proj, y_proj = setUp_grid_interpolation(coord_min, coord_max, dx, inputCRS)

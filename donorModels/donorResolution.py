@@ -51,7 +51,10 @@ def donor_chooseResolution(spatial_resolution, bathy_file):
   except:
     bathy_x = bathy_data.variables['lon']
     bathy_y = bathy_data.variables['lat']
-    bathy = bathy_data.variables['elevation']
+    try:
+      bathy = bathy_data.variables['elevation']
+    except:
+      bathy = bathy_data.variables['z']
   
   # Check spatial resolution and set it equal to the bathymetry resolution if 0
   if (spatial_resolution == 0.0):
