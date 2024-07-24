@@ -47,7 +47,7 @@ def write2hysea(eg_deformation, eg_x, eg_y, eg_time, donor, filtername, casename
   time_dim = ds.createDimension('time', None)
   
   time = ds.createVariable('time', 'f4', ('time',))
-  time.units = 'time step'
+  time.units = 'seconds'
   latitude = ds.createVariable('y', 'f8', ('y',))
   latitude.units = 'degrees north (WGS84)'
   latitude.long_name = 'latitude'
