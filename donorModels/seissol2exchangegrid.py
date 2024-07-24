@@ -244,19 +244,15 @@ def interpolate_seissol2structured(sx, dx, coord_min, coord_max, inputCRS, inclu
 
 
 
-def get_seissol(filename, spatial_resolution, CRS_reference_coordinates, include_horizontal):
+def get_seissol(filename, spatial_resolution, projection, include_horizontal):
   """
   Actual part that will be used by the main donor model functionality to get the deformation data.
   
   :param filename: filename for the SeisSol data (has to be an XDMF file)
   :param spatial_resolution: spatial_resolution in meters
-  :param CRS_reference_coordinates: CRS reference coordinates (list of longitude and latitude of lower left corner of the domain)  
+  *param projection: projection parameters (in Proj4 format) for converting from Cartesian to geographic (lon, lat) coordinates
   :param include_horizontal: boolean handle whether the output will only contain the vertical deformation (deformation) or also include the horizontal deformation
   """
-  
-  # CRS of the 2d mesh
-  inputCRS = "+proj=tmerc +datum=WGS84 +k=0.9996 +lon_0=" + CRS_reference_coordinates[0] + \
-                      " +lat_0=" + CRS_reference_coordinates[1]  
   
   print("Getting output data from SeisSol.\n".center(column_size))
   
@@ -267,6 +263,6 @@ def get_seissol(filename, spatial_resolution, CRS_reference_coordinates, include
   coordinate_min = geom.min(0)
   coordinate_max = geom.max(0) 
   
-  donor_deformation, donor_x, donor_y, donor_time = interpolate_seissol2structured(sx, spatial_resolution, coordinate_min, coordinate_max, inputCRS, include_horizontal)
+  donor_deformation, donor_x, donor_y, donor_time = interpolate_seissol2structured(sx, spatial_resolution, coordinate_min, coordinate_max, projection, include_horizontal)
 
   return donor_deformation, donor_x, donor_y, donor_time

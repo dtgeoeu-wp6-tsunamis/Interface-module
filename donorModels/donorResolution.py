@@ -17,7 +17,6 @@ def get_bathyResolutionlnMeters(bathy_resolution):
   Calculate bathymetry resolution in m (from transformation).
   
   :param bathy_resolution: resolution of bathymetry file in lat/lon
-  :param CRS_reference_coordinates: CRS reference coordinates (list of longitude and latitude of lower left corner of the domain)
 
   """
   # Define CRS  

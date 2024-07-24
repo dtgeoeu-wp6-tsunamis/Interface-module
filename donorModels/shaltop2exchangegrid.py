@@ -281,18 +281,14 @@ def interpolate_shaltop_data(shaltop_deformation, spatial_resolution, shaltop_x,
   
   
   
-def get_shaltop(donor_output_path, spatial_resolution, CRS_reference_coordinates):
+def get_shaltop(donor_output_path, spatial_resolution, projection):
   """
   Main donor model functionality to get the deformation data.
 
   :param donor_output_path: path to the directory where the SHALTOP output is stored
   :param spatial_resolution: spatial_resolution in meters
-  :param CRS_reference_coordinates: CRS reference coordinates (list of longitude and latitude of lower left corner of the domain)
+  *param projection: projection parameters (in Proj4 format) for converting from Cartesian to geographic (lon, lat) coordinates
   """
-  
-  # CRS of the 2d mesh
-  inputCRS = "+proj=tmerc +datum=WGS84 +k=0.9996 +lon_0=" + CRS_reference_coordinates[0] + \
-                      " +lat_0=" + CRS_reference_coordinates[1]  
   
   print("Getting output data from SHALTOP.\n".center(column_size))
   
@@ -304,7 +300,7 @@ def get_shaltop(donor_output_path, spatial_resolution, CRS_reference_coordinates
 
   donor_deformation, interpolated_x, interpolated_y = interpolate_shaltop_data(shaltop_deformation, spatial_resolution, shaltop_x, shaltop_y, len(donor_time))
 
-  donor_x, donor_y = project_coordinates(interpolated_x, interpolated_y, inputCRS)
+  donor_x, donor_y = project_coordinates(interpolated_x, interpolated_y, projection)
   stop = time.time()    
   print(f"The interpolation took {stop - start} s.\n".center(column_size))
   
