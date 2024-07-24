@@ -54,8 +54,8 @@ def donor2bathyDomain(bathy_file, donor_x, donor_y, donor_deformation):
   dx = donor_x[1] - donor_x[0]
 
   # Calculate new number of points for both x- and y-coordinates
-  new_Nx = int((bathy_x[-1] - bathy_x[0]) / dx) 
-  new_Ny = int((bathy_y[-1] - bathy_y[0]) / dx) 
+  new_Nx = int((bathy_x[-1] - bathy_x[0]) / dx) + 1
+  new_Ny = int((bathy_y[-1] - bathy_y[0]) / dx) + 1
 
   # Calculate indices at which the "old"/donor data will start and end on the "new"/exchange grid
   donor_x_index_start = int((donor_x[0] - x_min)/dx)

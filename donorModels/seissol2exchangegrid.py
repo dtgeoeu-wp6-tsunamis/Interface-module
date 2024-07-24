@@ -97,19 +97,15 @@ def project_coordinates(x, y, inputCRS):
   :param inputCRS: input CRS
   """
   transformer = Transformer.from_crs(inputCRS, basicCRS, always_xy=True)
-
-  # move x- and y-coordinates so that the lower left corner lies at [0,0]
-  x_tmp = x + np.abs(x[0])
-  y_tmp = y + np.abs(y[0])
-  
+ 
   # transform x-coordinates
-  y_lowerRow = np.repeat(y_tmp[0], len(x))
-  xnew, ynew = transformer.transform(x_tmp, y_lowerRow)
+  y_lowerRow = np.repeat(y[0], len(x))
+  xnew, ynew = transformer.transform(x, y_lowerRow)
   x_proj = xnew  
     
     # transform y-coordinates
-  x_leftColumn = np.repeat(x_tmp[0], len(y))
-  xnew, ynew = transformer.transform(x_leftColumn, y_tmp)
+  x_leftColumn = np.repeat(x[0], len(y))
+  xnew, ynew = transformer.transform(x_leftColumn, y)
   y_proj = ynew
 
   return x_proj, y_proj
