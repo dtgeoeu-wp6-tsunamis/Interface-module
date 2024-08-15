@@ -150,8 +150,8 @@ print(asterisk_fill + "\n")
 
 start = time.time()
 
-if (spatial_resolution > 0.0):
-  writeBathy.write_interpolatedBathy(args.receiver, eg_bathymetry, eg_x, eg_y, casename,  Ntime=np.shape(eg_deformation)[0])
+#if (spatial_resolution > 0.0):
+writeBathy.write_interpolatedBathy(args.receiver, eg_bathymetry, eg_x, eg_y, casename,  Ntime=np.shape(eg_deformation)[0])
 writeUplift.write_deformation(eg_deformation, eg_x, eg_y, donor_time, args.receiver, args.donor, filtername, casename, spatial_resolution)
 
 stop = time.time()
