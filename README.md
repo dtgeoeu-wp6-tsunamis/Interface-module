@@ -18,8 +18,14 @@ Latest changes made in 04/24 by M. Bänsch (UHAM)
 
 This script can be run from the command line and needs some additional arguments.
 
-How to run the script: 
-  python interface_module.py donor_output bathy_file --donor donor_model --projection projection_donor (--resolution resolution --only_donor_domain --receiver receiver_model --filter filter --filtering_depth filtering_depth --casename casename --include_horizontal_deformation)
+How to run the script:   
+```
+python interface_module.py donor_output bathy_file --donor donor_model --projection projection_donor (--resolution resolution --only_donor_domain --receiver receiver_model --filter filter --filtering_depth filtering_depth --casename casename --include_horizontal_deformation)
+```
+For example:
+```
+python interface_module.py seissol_model_extracted-surface.xdmf bathySamos.grd --donor seissol --projection "+proj=tmerc +datum=WGS84 +k=0.9996 +lon_0=26.7953 +lat_0=37.8973"
+```
 
 Arguments that need/can to be provided:
   * donor_output                       name of the output file or path from the donor model
