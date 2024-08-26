@@ -19,13 +19,13 @@ Latest changes made in 04/24 by M. Bänsch (UHAM)
 This script can be run from the command line and needs some additional arguments.
 
 How to run the script: 
-  python interface_module.py --donor donor_model --CRS_reference lon, lat donor_output bathy_file (--resolution resolution --only_donor_domain --receiver receiver_model --filter filter --filtering_depth filtering_depth --casename casename --include_horizontal_deformation)
+  python interface_module.py donor_output bathy_file --donor donor_model --projection projection_donor (--resolution resolution --only_donor_domain --receiver receiver_model --filter filter --filtering_depth filtering_depth --casename casename --include_horizontal_deformation)
 
 Arguments that need/can to be provided:
-  * --donor donor_model           where donor_model = seissol, shaltop, bingclaw (all lower case!) 
-  * --CRS_reference                    CRS coordinates reference (lon, lat of lower left corner of domain)
   * donor_output                       name of the output file or path from the donor model
   * bathy_file                             name of the bathymetry file. Domain has to be larger compared to the domain from the donor model
+  * --donor donor_model           where donor_model = seissol, shaltop, bingclaw (all lower case!) 
+  * --projection projection_donor   projection parameters (in Proj4 format) for converting from Cartesian to geographic (lon, lat) coordinates
   * --resolution resolution          (optional) spatial resolution the donor output will be interpolated to (will be used for both x- and y-coordinates; has to be provided in meters)
   * --only_donor_domain          (optional) handle to only use the domain given by the donor model (False by default)
   * --receiver receiver_model     (optional) receiver model (as of now, only hysea is available)
