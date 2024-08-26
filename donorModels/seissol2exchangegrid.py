@@ -97,19 +97,15 @@ def project_coordinates(x, y, inputCRS):
   :param inputCRS: input CRS
   """
   transformer = Transformer.from_crs(inputCRS, basicCRS, always_xy=True)
-
-  # move x- and y-coordinates so that the lower left corner lies at [0,0]
-  x_tmp = x + np.abs(x[0])
-  y_tmp = y + np.abs(y[0])
-  
+ 
   # transform x-coordinates
-  y_lowerRow = np.repeat(y_tmp[0], len(x))
-  xnew, ynew = transformer.transform(x_tmp, y_lowerRow)
+  y_lowerRow = np.repeat(y[0], len(x))
+  xnew, ynew = transformer.transform(x, y_lowerRow)
   x_proj = xnew  
     
     # transform y-coordinates
-  x_leftColumn = np.repeat(x_tmp[0], len(y))
-  xnew, ynew = transformer.transform(x_leftColumn, y_tmp)
+  x_leftColumn = np.repeat(x[0], len(y))
+  xnew, ynew = transformer.transform(x_leftColumn, y)
   y_proj = ynew
 
   return x_proj, y_proj
@@ -218,10 +214,11 @@ def interpolate_seissol2structured(sx, dx, coord_min, coord_max, inputCRS, inclu
   nTime = sx.ReadNdt()  # number of time steps in the Seissol file
   
   # Choose which data interpolate (only vertical or all components) based on the input handle  
+  is_new_format = 'u3' in sx.ReadAvailableDataFields()
   if (include_horizontal):
-    data = ['u1', 'u2', 'u3']
+    data = ['u1', 'u2', 'u3'] if is_new_format else ['U', 'V', 'W']
   else:
-    data = ['u3']    
+    data = ['u3'] if is_new_format else ['W']   
   
   # Create probe filter and get projected coordinates
   probeFilter, projDataShape, x_proj, y_proj = setUp_grid_interpolation(coord_min, coord_max, dx, inputCRS)
@@ -243,19 +240,15 @@ def interpolate_seissol2structured(sx, dx, coord_min, coord_max, inputCRS, inclu
 
 
 
-def get_seissol(filename, spatial_resolution, CRS_reference_coordinates, include_horizontal):
+def get_seissol(filename, spatial_resolution, projection, include_horizontal):
   """
   Actual part that will be used by the main donor model functionality to get the deformation data.
   
   :param filename: filename for the SeisSol data (has to be an XDMF file)
   :param spatial_resolution: spatial_resolution in meters
-  :param CRS_reference_coordinates: CRS reference coordinates (list of longitude and latitude of lower left corner of the domain)  
+  *param projection: projection parameters (in Proj4 format) for converting from Cartesian to geographic (lon, lat) coordinates
   :param include_horizontal: boolean handle whether the output will only contain the vertical deformation (deformation) or also include the horizontal deformation
   """
-  
-  # CRS of the 2d mesh
-  inputCRS = "+proj=tmerc +datum=WGS84 +k=0.9996 +lon_0=" + CRS_reference_coordinates[0] + \
-                      " +lat_0=" + CRS_reference_coordinates[1]  
   
   print("Getting output data from SeisSol.\n".center(column_size))
   
@@ -266,6 +259,6 @@ def get_seissol(filename, spatial_resolution, CRS_reference_coordinates, include
   coordinate_min = geom.min(0)
   coordinate_max = geom.max(0) 
   
-  donor_deformation, donor_x, donor_y, donor_time = interpolate_seissol2structured(sx, spatial_resolution, coordinate_min, coordinate_max, inputCRS, include_horizontal)
+  donor_deformation, donor_x, donor_y, donor_time = interpolate_seissol2structured(sx, spatial_resolution, coordinate_min, coordinate_max, projection, include_horizontal)
 
   return donor_deformation, donor_x, donor_y, donor_time

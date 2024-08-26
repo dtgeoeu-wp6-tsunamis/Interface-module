@@ -13,14 +13,14 @@ Contains the following functionalities:
 """
 
 
-def get_donorModel(choose_donormodel, donor_output, spatial_resolution, CRS_reference, bathy_file, include_horizontal=False):
+def get_donorModel(choose_donormodel, donor_output, spatial_resolution, projection, bathy_file, include_horizontal=False):
   """
   This function provides the data for the respective donor model.
   
   :param choose_donormodel: donor model 
   :param donor_output: name of the output file or path from the donor model
   :param spatial_resolution: spatial resolution for which the data will be given as a structured mesh (resolution is the same in both horizontal directions)
-  :param CRS_reference: CRS reference coordinates (list of longitude and latitude of lower left corner of the domain)  
+  *param projection: projection parameters (in Proj4 format) for converting from Cartesian to geographic (lon, lat) coordinates
   :param bathy_file: file for the bathymetry (has to be larger than the mesh provided by the donor mesh)
   :param include_horizontal: handle whether to include horizontal deformations (False by default)
   """
@@ -33,10 +33,10 @@ def get_donorModel(choose_donormodel, donor_output, spatial_resolution, CRS_refe
     donor_deformation, donor_x, donor_y, donor_time = get_bingclaw(donor_output, resolution)
     return donor_deformation, donor_x, donor_y, donor_time, donor_bathy, resolution
   if (choose_donormodel == 'seissol'):
-    donor_deformation, donor_x, donor_y, donor_time = get_seissol(donor_output, resolution, CRS_reference, include_horizontal)
+    donor_deformation, donor_x, donor_y, donor_time = get_seissol(donor_output, resolution, projection, include_horizontal)
     return donor_deformation, donor_x, donor_y, donor_time, donor_bathy, resolution
   if (choose_donormodel == 'shaltop'):
-    donor_deformation, donor_x, donor_y, donor_time = get_shaltop(donor_output, resolution, CRS_reference)
+    donor_deformation, donor_x, donor_y, donor_time = get_shaltop(donor_output, resolution, projection)
     return donor_deformation, donor_x, donor_y, donor_time, donor_bathy, resolution
   else:
     raise NotImplementedError("The provided donor model is unknown. Possible donor models include: bingclaw, seissol or shaltop")

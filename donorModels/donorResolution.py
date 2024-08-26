@@ -17,7 +17,6 @@ def get_bathyResolutionlnMeters(bathy_resolution):
   Calculate bathymetry resolution in m (from transformation).
   
   :param bathy_resolution: resolution of bathymetry file in lat/lon
-  :param CRS_reference_coordinates: CRS reference coordinates (list of longitude and latitude of lower left corner of the domain)
 
   """
   # Define CRS  
@@ -51,7 +50,10 @@ def donor_chooseResolution(spatial_resolution, bathy_file):
   except:
     bathy_x = bathy_data.variables['lon']
     bathy_y = bathy_data.variables['lat']
-    bathy = bathy_data.variables['elevation']
+    try:
+      bathy = bathy_data.variables['elevation']
+    except:
+      bathy = bathy_data.variables['z']
   
   # Check spatial resolution and set it equal to the bathymetry resolution if 0
   if (spatial_resolution == 0.0):

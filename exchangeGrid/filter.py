@@ -197,7 +197,7 @@ def use_kajiura_filter(deformation, bathymetry, spatial_resolution, filtering_de
   Nx = np.shape(deformation)[2]
 
   current_disp = np.zeros((Ny, Nx))
-  current_η = np.zeros((Ny, Nx))
+  current_η_diff = np.zeros((Ny, Nx))
   current_deformation_diff = np.zeros((Ny, Nx))
   
   print(f"Precomputing parts for the filtering.".center(column_size))
@@ -230,14 +230,14 @@ def use_kajiura_filter(deformation, bathymetry, spatial_resolution, filtering_de
     print(f"Filter is in timestep {t+1:{frmt}d} of {Ntime} with a filtering depth of {kajiura_depth} m.".center(column_size))
 
     # Start filterting
-    current_η[:] = 0.0
+    current_η_diff[:] = 0.0
     current_deformation_diff[:] = current_deformation - current_disp  
-    apply_kajiura_fft(current_bathymetry, current_deformation_diff, current_η, 
+    apply_kajiura_fft(current_bathymetry, current_deformation_diff, current_η_diff, 
                                -np.min(bathymetry), spatial_resolution, spatial_resolution, 
                                precalc_σ, precalc_R, kajiura_depth)
     current_disp = deformation[t]
 
-    filtered_deformation[t] = current_η
+    filtered_deformation[t] = filtered_deformation[max(0, t-1)] + current_η_diff
 
     stop = time.time()
     print(f"Timestep {t+1} took {stop - start} seconds.".center(column_size))
