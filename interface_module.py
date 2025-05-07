@@ -47,7 +47,8 @@ import exchangeGrid.filter as filtering
 import receiverModel.writeInterpolatedBathy as writeBathy
 import receiverModel.writeDeformation as writeUplift
 import numpy as np
-import os
+import matplotlib.pyplot as plt
+import os, sys
 
 #TODO: include functionality for parameter file ?
 
@@ -112,7 +113,10 @@ print(asterisk_fill + "\n")
 
 start = time.time()
 
-donor_deformation, donor_x, donor_y, donor_time, donor_bathy, eg_resolution = donorInterface.get_donorModel(args.donor, args.donor_output, spatial_resolution, projection, args.bathy_file, incl_horizontal)
+# ------------- CHANGES FOR KAJIURA TESTING -------------
+# Commented out line below as it is not needed in simple geometry example for testing
+### donor_deformation, donor_x, donor_y, donor_time, donor_bathy, eg_resolution = donorInterface.get_donorModel(args.donor, args.donor_output, spatial_resolution, projection, args.bathy_file, incl_horizontal)
+#------------- END of CHANGES FOR KAJIURA TESTING -------------
 
 stop = time.time()
 print((f"Stage 1 completed. It took {stop - start} seconds.\n").center(column_size))
@@ -129,9 +133,91 @@ print(asterisk_fill + "\n")
 
 start = time.time()
 
+# ------------- CHANGES FOR KAJIURA TESTING -------------
+# Example of command to run script for testing Kajiura with simple 2D geometry:
+# > python interface_module.py --donor seissol fake/tmp bathyfake.grd --casename kajiuratesting --filter kajiura --filtering_depth 2000
 
-eg_tmp_deformation, eg_x, eg_y, eg_bathymetry =  exchangeGridCreation.createExchangeGrid(args.bathy_file, donor_x, donor_y, donor_deformation, only_donor_domain)
-eg_deformation = filtering.filter_deformation(filtername, eg_tmp_deformation, eg_bathymetry, eg_resolution, filtering_depth)
+# Commented out line below as all these output values will be imposed
+### eg_tmp_deformation, eg_x, eg_y, eg_bathymetry =  exchangeGridCreation.createExchangeGrid(args.bathy_file, donor_x, donor_y, donor_deformation, only_donor_domain)
+
+# Create computational mesh 
+eg_res = 100    # Resolution of the mesh (m)
+eg_x = np.arange(-25000,25100,eg_res)   # Crete array of x coordinates (m)
+eg_y = np.arange(-25000,25100,eg_res)   # Crete array of y coordinates (m)
+
+# Create bathymetry matrix
+# and impose a different bathymetry value at the side of the box to allow for the fit in function precompute_σ to work
+# If bathymetry has only one value, then the fit function in precompute_σ fails as it has only one point and cannot compute the fit
+eg_bathy = np.zeros((1, eg_x.shape[0], eg_y.shape[0]))
+eg_bathy[0, :, :] = -2000       # Bathymetry (m)           
+eg_bathy[0, :, 0:10] = eg_bathy[0,0,0]+200    # Impose a different bathymetry value at the side of the box (m)
+
+# Set up initial sea floor deformation at the center of the domain
+eg_tmp_def = np.zeros((1, eg_x.shape[0], eg_y.shape[0]))
+a = 10000       # x extent of the initial sea floor deformation (m)
+a_el_half = int(a/2/eg_res)
+x_center = int((eg_x.shape[0]-1)/2)
+x1 = x_center-a_el_half     
+x2 = x_center+a_el_half+1   
+
+b = 10000       # y extent of the initial sea floor deformation (m)
+b_el_half = int(b/2/eg_res)
+y_center = int((eg_y.shape[0]-1)/2)
+y1 = y_center-b_el_half
+y2 = y_center+b_el_half+1
+
+print("x and y coordinates of initial deformation")
+print(eg_x[x1:x2])
+print(eg_y[y1:y2])
+
+eg_tmp_def[0, y1:y2, x1:x2] = 2 # Assign initial sea floor deformation (m) 
+
+"""
+# PLOT BATHYMETRY
+plt.figure(figsize=(6, 6))
+plt.imshow(eg_bathymetry[0], cmap='viridis', interpolation='nearest')
+plt.colorbar(label='Value')
+plt.title('Deformation')
+plt.show()
+"""
+# Commented out line below to use imposed values of bathymetry and deformation
+### eg_deformation = filtering.filter_deformation(filtername, eg_tmp_deformation, eg_bathymetry, eg_resolution, filtering_depth)
+eg_deformation = filtering.filter_deformation(filtername, eg_tmp_def, eg_bathy, eg_res, filtering_depth)
+
+print(f"Maximum amplitude of filtered deformation is {eg_deformation.max()} m")
+
+# Plot initial seafloor deformation and filtered deformation
+plt.figure(figsize=(20, 6))
+ax1 = plt.subplot(131)
+plt.imshow(eg_tmp_def[0], cmap='viridis', interpolation='nearest')
+plt.colorbar(label='Value')
+plt.title('Seafloor deformation (m)')
+ax1.set_xlabel("x elements")
+ax1.set_ylabel("y elements")
+
+ax2 = plt.subplot(132)
+plt.imshow(eg_deformation[0], cmap='viridis', interpolation='nearest')
+plt.colorbar(label='Value')
+plt.title('Filtered deformation (m)')
+ax2.set_xlabel("x elements")
+ax2.set_ylabel("y elements")
+
+ax3 = plt.subplot(133)
+#plt.plot(eg_y, eg_deformation[0,y_center,:])
+plt.plot(eg_x, eg_tmp_def[0,y_center,:], color = "blue", label='Seafloor def x')
+#plt.plot(eg_y, eg_tmp_def[0,:,x_center], color="orange", label='Seafloor def y')
+plt.plot(eg_x, eg_deformation[0,y_center,:], color = "blue", linestyle='dashed',label='Filtered def along x')
+#plt.plot(eg_y, eg_deformation[0,:,x_center], color="orange", linestyle='dashed',label='Filtered def along y')
+plt.title("Seafloor vs Filtered deformation along x profile")
+plt.legend()
+ax3.set_xlabel("x (m)")
+ax3.set_ylabel("Deformation (m)")
+#plt.ylim((0,1))
+
+
+plt.show()
+sys.exit()
+#------------- END of CHANGES FOR KAJIURA TESTING -------------
 
 stop = time.time()
 print(f"Stage 2 completed. It took {stop - start} seconds.\n".center(column_size))

@@ -1,9 +1,10 @@
 import numpy as np
-import os
+import os, sys
 import time
 
 from math import sqrt, ceil
 from scipy import interpolate, fft
+import matplotlib.pyplot as plt
 
 """
 Functionalities to filter the deformation data. Consists of a Kajiura or no filter.
@@ -45,6 +46,12 @@ def precompute_R():
     
   l_R = [R(r) for r in l_r]  
   itp = interpolate.interp1d(l_r, l_R, kind='nearest', fill_value='extrapolate')
+  
+  # plt.figure(figsize=(6, 6))
+  # plt.plot(l_r, l_R)
+  # plt.plot(l_r,itp(l_r))
+  # plt.title('precomputed R')
+  # plt.show()
   
   return itp
 
@@ -89,11 +96,13 @@ def precompute_σ(h_min, h_max, Δx, Δy, precalc_R, n_h=20.0):
 
     N = np.arange(1, n_max + 1)
     M = np.arange(1, m_max + 1)
-
+    
     for n in N:
+        n = np.int64(n)   # FOR KAJIURA FILTER TESTING: I had to increase the precision of n otherwise sqrt((n * Δx) ** 2 + (m * Δy) ** 2) would fail 
         for m in M:
+            m = np.int64(m) # FOR KAJIURA FILTER TESTING: I had to increase the precision of m otherwise sqrt((n * Δx) ** 2 + (m * Δy) ** 2) would fail
             σ_inv += 4 * precalc_R(sqrt((n * Δx) ** 2 + (m * Δy) ** 2) / h)
-
+    
     for n in N:
         σ_inv += 2 * precalc_R(n * Δx / h)
 
@@ -105,8 +114,10 @@ def precompute_σ(h_min, h_max, Δx, Δy, precalc_R, n_h=20.0):
     return h ** 2 / (σ_inv * Δx * Δy)
 
   l_σ = [σ(h) for h in l_h]
-
+  print(l_h,l_σ)
+  
   itp = interpolate.interp1d(l_h, l_σ, kind='cubic', fill_value='extrapolate')
+
   return itp
 
 
@@ -161,8 +172,19 @@ def apply_kajiura_fft(bathymetry, deformation, η, h_max, Δx, Δy, precalc_σ, 
     
   ny, nx = η.shape
   η_aux = np.zeros((ny,nx))
+  # ------------- FOR KAJIURA TESTING COMMENT OUT and IMPOSED SIGMA VALUE -------------
+  # If bathymetry has only one value, then the next lines are relevant, otherwise, the call to precalc_σ works and does not have to be commented out
+  # Commented out call of fit object precalc_σ because fit function computed in precompute_σ does not work if bathymetry has only one constant value
+  # Therefore, I manually impose value which is obtained in line 116: l_σ = [σ(h) for h in l_h] 
+  # Note that this value is slightly different for different filter depths 
+  
+  # σ = 1.0003739600575234 # for depth 4000 m
+  # σ = 0.9992633264288183 # for depth 2000 m
+  
   σ = precalc_σ(filter_depth)
-    
+ 
+  # ----------- END of TESTING IMPLEMENTATION -----------------
+
   for x in range(nx):
       for y in range(ny):
           h_yx = max(0.0, water_level - bathymetry[y, x]) # set height to 0 on land
@@ -179,7 +201,7 @@ def apply_kajiura_fft(bathymetry, deformation, η, h_max, Δx, Δy, precalc_σ, 
   Η *= Filter
   η_complex = fft.ifft2(Η)
   η[:] = np.real(η_complex)
-  
+
   
 
 def use_kajiura_filter(deformation, bathymetry, spatial_resolution, filtering_depth):
@@ -203,8 +225,19 @@ def use_kajiura_filter(deformation, bathymetry, spatial_resolution, filtering_de
   print(f"Precomputing parts for the filtering.".center(column_size))
   start = time.time()
   precalc_R = precompute_R()
+  # ------------- FOR KAJIURA TESTING -------------
+  # If bathymetry has only one value, then the next lines are relevant, otherwise, the call to precompute_σ works and does not have to be commented out
+  # COMMENT OUT the call to the function precompute_σ which would return a fit object
+  # because fit does not work as there is only one value
+  # Instead here I give a value to precalc_σ just to not change the call to apply_kajiura_fft
+  # but this value is not used as in that function I impose a fixed value of sigma, without the need to use the precalc_σ fit object
+
   precalc_σ = precompute_σ(-np.max(bathymetry), -np.min(bathymetry), 
                                                       spatial_resolution, spatial_resolution, precalc_R)
+                                                    
+  #precalc_σ=0
+  # ------------- END of KAJIURA TESTING -------------
+
   stop = time.time()
   print(f"Precomputations performed. It took {stop - start} seconds.".center(column_size))
 
@@ -226,7 +259,7 @@ def use_kajiura_filter(deformation, bathymetry, spatial_resolution, filtering_de
       maxdeform_indices = np.unravel_index(np.argmax(np.abs(current_deformation), axis=None), (Ny, Nx))
       # Set up bathymetry at largest deformation as Kajiura depth
       kajiura_depth = np.abs(current_bathymetry[maxdeform_indices[0], maxdeform_indices[1]])
-    
+       
     print(f"Filter is in timestep {t+1:{frmt}d} of {Ntime} with a filtering depth of {kajiura_depth} m.".center(column_size))
 
     # Start filterting
@@ -236,7 +269,7 @@ def use_kajiura_filter(deformation, bathymetry, spatial_resolution, filtering_de
                                -np.min(bathymetry), spatial_resolution, spatial_resolution, 
                                precalc_σ, precalc_R, kajiura_depth)
     current_disp = deformation[t]
-
+    
     filtered_deformation[t] = filtered_deformation[max(0, t-1)] + current_η_diff
 
     stop = time.time()
