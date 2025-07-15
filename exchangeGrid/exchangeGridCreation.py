@@ -51,16 +51,18 @@ def donor2bathyDomain(bathy_file, donor_x, donor_y, donor_deformation):
   print("Starting the exchange grid creation.".center(column_size))
   
   # Get spatial resolution from the difference of some donor coordinates (donor grid is uniform!)
+  # WARNING: Fixed bug here. We should consider dx and dy: the grid is uniform in meter but dx and dy are in degrees here!
   dx = donor_x[1] - donor_x[0]
+  dy = donor_y[1] - donor_y[0]
 
   # Calculate new number of points for both x- and y-coordinates
   new_Nx = int((bathy_x[-1] - bathy_x[0]) / dx) + 1
-  new_Ny = int((bathy_y[-1] - bathy_y[0]) / dx) + 1
+  new_Ny = int((bathy_y[-1] - bathy_y[0]) / dy) + 1
 
   # Calculate indices at which the "old"/donor data will start and end on the "new"/exchange grid
   donor_x_index_start = int((donor_x[0] - x_min)/dx)
   donor_x_index_end = donor_x_index_start + len(donor_x)
-  donor_y_index_start = int((donor_y[0] - y_min)/dx)
+  donor_y_index_start = int((donor_y[0] - y_min)/dy)
   donor_y_index_end = donor_y_index_start + len(donor_y)
       
   # Create new x-coordinate array
@@ -79,9 +81,9 @@ def donor2bathyDomain(bathy_file, donor_x, donor_y, donor_deformation):
   
   # Calculate the new coordinate points recursively from the donor coordinates
   for idx in range(donor_y_index_start):
-    exchange_grid_y[donor_y_index_start-idx-1] = exchange_grid_y[donor_y_index_start-idx] - dx
+    exchange_grid_y[donor_y_index_start-idx-1] = exchange_grid_y[donor_y_index_start-idx] - dy
   for idx in range(new_Ny-donor_y_index_end):
-    exchange_grid_y[donor_y_index_end+idx] = exchange_grid_y[donor_y_index_end+idx-1] + dx
+    exchange_grid_y[donor_y_index_end+idx] = exchange_grid_y[donor_y_index_end+idx-1] + dy
     
   # Get number of deformation timesteps
   Ntime = np.shape(donor_deformation)[0] 
