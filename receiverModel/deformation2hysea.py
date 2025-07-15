@@ -42,22 +42,22 @@ def write2hysea(eg_deformation, eg_x, eg_y, eg_time, donor, filtername, casename
   ds.history = "File written using netCDF4 Python module"
   today = datetime.today()
   ds.description = "Created " + today.strftime("%d/%m/%y")
-  lon_dim = ds.createDimension('x', Ncolumn)
-  lat_dim = ds.createDimension('y', Nrow)
+  lon_dim = ds.createDimension('lon', Ncolumn)
+  lat_dim = ds.createDimension('lat', Nrow)
   time_dim = ds.createDimension('time', None)
   
   time = ds.createVariable('time', 'f4', ('time',))
   time.units = 'seconds'
-  latitude = ds.createVariable('y', 'f8', ('y',))
+  latitude = ds.createVariable('lat', 'f8', ('lat',))
   latitude.units = 'degrees north (WGS84)'
   latitude.long_name = 'latitude'
-  longitude = ds.createVariable('x', 'f8', ('x',))
+  longitude = ds.createVariable('lon', 'f8', ('lon',))
   longitude.units = 'degrees east (WGS84)'
   longitude.long_name = 'longitude'
   longitude[:] = eg_x
   latitude[:] = eg_y
   
-  z = ds.createVariable('z', 'f4', ('time', 'y', 'x'))
+  z = ds.createVariable('z', 'f4', ('time', 'lat', 'lon'))
   
   for t in range(Ntime):
     time[t] = eg_time[t]

@@ -31,8 +31,8 @@ def write_interpolatedBathy(receiver, interpolated_bathy, eg_x, eg_y, casename, 
   ds.history = "based on bathymetry for HySEA"
   today = datetime.today()
   ds.description = "Created " + today.strftime("%d/%m/%y")
-  lon_dim = ds.createDimension('x', len(eg_x))
-  lat_dim = ds.createDimension('y', len(eg_y))
+  lon_dim = ds.createDimension('lon', len(eg_x))
+  lat_dim = ds.createDimension('lat', len(eg_y))
   
   # If HySEA is used, only bathymetry for the first timestep will be used
   if (not(receiver == 'hysea')): 
@@ -40,20 +40,20 @@ def write_interpolatedBathy(receiver, interpolated_bathy, eg_x, eg_y, casename, 
     time = ds.createVariable('time', 'f4', ('time',))
     time.units = 'time step'
   
-  longitude = ds.createVariable('x', 'f8', ('x',))
-  longitude.long_name = 'x'
+  longitude = ds.createVariable('lon', 'f8', ('lon',))
+  longitude.long_name = 'longitude'
   longitude.actual_range = [eg_x[0], eg_x[-1]]
-  latitude = ds.createVariable('y', 'f8', ('y',))
-  latitude.long_name = 'y'
+  latitude = ds.createVariable('lat', 'f8', ('lat',))
+  latitude.long_name = 'latitude'
   latitude.actual_range = [eg_y[0], eg_y[-1]]
   longitude[:] = eg_x
   latitude[:] = eg_y
   
   # If HySEA is used, only bathymetry for the first timestep will be used
   if (receiver == 'hysea'): 
-    bathy_nc = ds.createVariable('z', 'f4', ('y', 'x',))
+    bathy_nc = ds.createVariable('z', 'f4', ('lat', 'lon',))
   else:    
-    bathy_nc = ds.createVariable('z', 'f4', ('time', 'y', 'x',))
+    bathy_nc = ds.createVariable('z', 'f4', ('time', 'lat', 'lon',))
   bathy_nc.long_name = 'z'
   bathy_nc.fill_values = np.nan
   bathy_nc.actual_range = [np.min(interpolated_bathy), np.max(interpolated_bathy)]
