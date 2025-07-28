@@ -7,6 +7,7 @@ from pyproj import Transformer
 from scipy.interpolate import RectBivariateSpline
 from scipy.spatial import KDTree
 from scipy import interpolate
+import netCDF4
 
 
 #TODO Lon/Lat for the bottom left coordinates of the domain should be provided by some way within the SHALTOP output. Will be used for inputCRS. 
@@ -51,12 +52,27 @@ def project_coordinates(x, y, projection):
 
   inputCRS = gridinfo[2]
 
-  # Perform the transform from the resolution in m to degree
+  xnb = np.shape(x)[0]
+  ynb = np.shape(y)[0]
+
+  # TO DO HERE TO CHECK AND THEN INTEGRATE IN THE TRUE INTERFACE MODULE REPO
+  # Do llc and urc conversion and then two consecutive points for res in degree to reconstruct the lat lon grid
+
   transformer = Transformer.from_crs(inputCRS, basicCRS, always_xy=True)
-  ytmp = y[0]*np.ones(np.shape(x))
-  x_proj,_ = transformer.transform(x,ytmp)
-  xtmp = x[0]*np.ones(np.shape(y))
-  _,y_proj = transformer.transform(xtmp,y)
+  x0_proj,y0_proj = transformer.transform(x[0],y[0])
+  xf_proj,yf_proj = transformer.transform(x[-1],y[-1])
+
+  dx_proj = (xf_proj - x0_proj)/xnb
+  dy_proj = (yf_proj - y0_proj)/ynb
+
+  x_proj = np.array([x0_proj+i*dx_proj for i in range(xnb)])
+  y_proj = np.array([y0_proj+i*dy_proj for i in range(ynb)])
+
+  # WRONG
+  # ytmp = y[0]*np.ones(np.shape(x))
+  # x_proj,_ = transformer.transform(x,ytmp)
+  # xtmp = x[0]*np.ones(np.shape(y))
+  # _,y_proj = transformer.transform(xtmp,y)
 
   return x_proj, y_proj
 
@@ -175,8 +191,6 @@ def obtain_shaltop_data(shaltop_data_path,projection):
   # Computing error for initial time
   bathymetry_file = open(os.path.join(shaltop_data_path, 'data2/z.bin'),'r')
   bathymetry = np.fromfile(bathymetry_file, dtype='float32', count=Nx*Ny).reshape((Ny, Nx))
-  ####### Flip due to error while initializing Shaltop. This will be fixed for the next scenarios. ######
-  bathymetry = np.flip(bathymetry,axis=0)
   
   # Domain [xmin, xmax]
   xmin = np.min(local_x)
@@ -191,15 +205,13 @@ def obtain_shaltop_data(shaltop_data_path,projection):
   # Get local height data from SHALTOP output files
   shaltop_deformation_file = open(os.path.join(shaltop_data_path, 'data2/rho.bin'),'r')
   shaltop_local_deformation = np.fromfile(shaltop_deformation_file, dtype='float32', count=Ntime*Nx*Ny).reshape((Ntime, Ny, Nx))
-  ###### Flip due to error while initializing Shaltop. This will be fixed for the next scenarios. ######
-  shaltop_local_deformation = np.flip(shaltop_local_deformation,axis=1)
   
   # Calculate correct height for each timestep
   shaltop_deformation = calculate_correct_height(shaltop_local_deformation, bathymetry, Ntime, Nx, Ny, xmin, ymin, dx, dy)
   stop = time.time()    
   print(f"Data has been obtained. It took {stop - start} s.".center(column_size))
   
-  return shaltop_deformation, local_x, local_y, shaltop_time
+  return shaltop_deformation, local_x, local_y, shaltop_time, shaltop_local_deformation, bathymetry
 
 
 
@@ -240,7 +252,51 @@ def get_shaltop(donor_output_path, spatial_resolution, projection):
   
   print("Getting output data from SHALTOP.\n".center(column_size))
   
-  shaltop_deformation, shaltop_x, shaltop_y, donor_time = obtain_shaltop_data(donor_output_path,projection)
+  shaltop_deformation, shaltop_x, shaltop_y, donor_time, hshaltop, bathymetry = obtain_shaltop_data(donor_output_path,projection)
+
+  test_x, test_y = project_coordinates(shaltop_x, shaltop_y, projection)
+
+  # #################### VIZU SHALTOP NETCDF ######################
+
+  netCDFFile = netCDF4.Dataset(donor_output_path+'/shaltopverif.nc', "w", format="NETCDF4")
+
+  netCDFFile.Conventions = "CF-1.5"
+  netCDFFile.GDAL = "GDAL 3.4.1, released 2021/12/27"
+  netCDFFile.history = "created by script"
+  netCDFFile.NCO = "4.7.2"
+  netCDFFile.nco_openmp_thread_number = 1.0
+
+  lat = netCDFFile.createDimension("lat", len(test_y))
+  lon = netCDFFile.createDimension("lon", len(test_x))
+  timev = netCDFFile.createDimension("time", len(donor_time))
+
+  latitudes = netCDFFile.createVariable("lat","f4",("lat",))
+  latitudes.long_name = "latitude"
+  latitudes.standard_name = "latitude"
+  latitudes.units = "degrees_north"
+  longitudes = netCDFFile.createVariable("lon","f4",("lon",))
+  longitudes.long_name = "longitude"
+  longitudes.standard_name = "longitude"
+  longitudes.units = "degrees_east"
+  times = netCDFFile.createVariable("times","f4",("time",))
+  times.long_name = "time"
+  times.standard_name = "time"
+  times.units = "seconds"
+  z2 = netCDFFile.createVariable("h","f4",("time","lat","lon",),fill_value=-9999.0)
+  z2.units = "GDAL Band Number 1"
+  z3 = netCDFFile.createVariable("bathy","f4",("lat","lon",),fill_value=-9999.0)
+  z3.units = "GDAL Band Number 1"
+
+  latitudes[:] = test_y
+  longitudes[:] = test_x
+
+  times[:] = donor_time
+  z2[:,:,:] = hshaltop
+  z3[:,:] = bathymetry
+
+  netCDFFile.close()
+
+  # #################### VIZU SHALTOP NETCDF ######################
   
   # Interpolate Bingclaw data to new grid
   print("Starting the interpolation (SHALTOP).".center(column_size))
@@ -251,46 +307,6 @@ def get_shaltop(donor_output_path, spatial_resolution, projection):
   donor_x, donor_y = project_coordinates(interpolated_x, interpolated_y, projection)
   stop = time.time()    
   print(f"The interpolation took {stop - start} s.\n".center(column_size))
-
-  ####################
-
-  # netCDFFile = netCDF4.Dataset('/home/marboeuf/shalbing-to-hysea/outputs/mscen_v0.141_x0_15.471_y0_38.004/shaltop_out/shaltopverif.nc', "w", format="NETCDF4")
-
-  # netCDFFile.Conventions = "CF-1.5"
-  # netCDFFile.GDAL = "GDAL 3.4.1, released 2021/12/27"
-  # netCDFFile.history = "created by script"
-  # netCDFFile.NCO = "4.7.2"
-  # netCDFFile.nco_openmp_thread_number = 1.0
-
-  # lat = netCDFFile.createDimension("lat", len(donor_y))
-  # lon = netCDFFile.createDimension("lon", len(donor_x))
-  # timev = netCDFFile.createDimension("time", len(donor_time))
-
-  # latitudes = netCDFFile.createVariable("lat","f4",("lat",))
-  # latitudes.long_name = "latitude"
-  # latitudes.standard_name = "latitude"
-  # latitudes.units = "degrees_north"
-  # longitudes = netCDFFile.createVariable("lon","f4",("lon",))
-  # longitudes.long_name = "longitude"
-  # longitudes.standard_name = "longitude"
-  # longitudes.units = "degrees_east"
-  # times = netCDFFile.createVariable("times","f4",("time",))
-  # times.long_name = "time"
-  # times.standard_name = "time"
-  # times.units = "seconds"
-  # z = netCDFFile.createVariable("z","f4",("time","lat","lon",),fill_value=-9999.0)
-  # z.units = "GDAL Band Number 1"
-
-  # latitudes[:] = donor_y
-  # longitudes[:] = donor_x
-
-  # # For an unknown reason, ASCII GRD file store data with a reversed order for latitudes compared to netCDF
-  # times[:] = donor_time
-  # z[:,:,:] = donor_deformation
-
-  # netCDFFile.close()
-
-  ####################
 
   return donor_deformation, donor_x, donor_y, donor_time
 
