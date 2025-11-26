@@ -12,26 +12,31 @@ Contains the following functionalities:
 """
 
 
-def get_bathyResolutionlnMeters(bathy_resolution):
+def get_bathyResolutionlnMeters(bathy_resolution, projection, xc, yc):
   """
-  Calculate bathymetry resolution in m (from transformation).
-  
-  :param bathy_resolution: resolution of bathymetry file in lat/lon
+  Convert a longitudinal bathymetry resolution (in degrees)
+  into meters using a local projection.
 
+  :param bathy_resolution: grid spacing in degrees (Δlon)
+  :param projection: projection string (e.g. "+proj=tmerc ...")
+  :param xc: center longitude
+  :param yc: center latitude
   """
   # Define CRS  
   inputCRS = 'epsg:4326' # basic lat-lon coordinate system
-  outCRS = "+proj=tmerc +datum=WGS84"
   
   # Perform the transform
-  transformer = Transformer.from_crs(inputCRS, outCRS, always_xy=True)
-  resolution_in_m = transformer.transform(bathy_resolution, 1.)[0]
-  
-  return resolution_in_m
+  transformer = Transformer.from_crs(inputCRS, projection, always_xy=True)
+  # Transform two lon points at the same latitude
+  x1, y1 = transformer.transform(xc, yc)
+  x2, y2 = transformer.transform(xc + bathy_resolution, yc)
+
+  # Horizontal resolution in meters
+  return abs(x2 - x1)
 
 
 
-def donor_chooseResolution(spatial_resolution, bathy_file):
+def donor_chooseResolution(spatial_resolution, bathy_file, projection):
   """
   Checks whether the given spatial resolution (im m) is 0. If yes, uses the spatial resolution of the bathymetry
 
@@ -61,12 +66,23 @@ def donor_chooseResolution(spatial_resolution, bathy_file):
     # Calculate bathymetry resolution (uniform grid is assumed!); ensure that dx = dy
     bathy_x_res = bathy_x[1]-bathy_x[0]
     bathy_y_res = bathy_y[1]-bathy_y[0]
+
+    # check that the grid is uniform
+    dx = np.diff(bathy_x[:])
+    dy = np.diff(bathy_y[:])
+    dx, dy = np.abs(dx), np.abs(dy)
+
+    if not np.allclose(dx, dx[0]) or not np.allclose(dy, dy[0]):
+        raise ValueError("Bathymetry grid is not uniform!")
+
     if (np.abs(bathy_x_res - bathy_y_res) <= 1E-8):
       bathy_resolution = bathy_x_res
     else: 
       raise ValueError("The provided bathymetry file has different resolutions for x- and y-coordinates. Please provide a bathymetry file that has the same resolution in both directions.")
-    
-    bathy_resolution_meter = get_bathyResolutionlnMeters(bathy_resolution)
+
+    lon_center = bathy_x[len(bathy_x)//2]
+    lat_center = bathy_y[len(bathy_y)//2]
+    bathy_resolution_meter = get_bathyResolutionlnMeters(bathy_resolution, projection, lon_center, lat_center)
     return bathy_resolution_meter, bathy
   
   else:

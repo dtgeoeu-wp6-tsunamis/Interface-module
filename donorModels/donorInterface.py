@@ -26,7 +26,7 @@ def get_donorModel(choose_donormodel, donor_output, spatial_resolution, projecti
   """
   
   # Perform resolution check
-  resolution, donor_bathy =  donor_chooseResolution(spatial_resolution, bathy_file)
+  resolution, donor_bathy =  donor_chooseResolution(spatial_resolution, bathy_file, projection)
   
   # Choose corresponding donor model and get the deformation data
   if (choose_donormodel == 'bingclaw'):
