@@ -32,13 +32,17 @@ asterisk_fill = "*" * column_size
 
 
 class seissolxdmfExtended(seissolxdmf.seissolxdmf):
-  def generateVtkObject(self):
+  def generateVtkObject(self, projection):
     """Filling in vtk arrays with data from hdf5 file."""
 
     connect = self.ReadConnect()
     nElements, ndim2 = connect.shape
 
     xyz = self.ReadGeometry()
+
+    transformer = Transformer.from_crs(projection, basicCRS, always_xy=True)
+    xyz[:,0], xyz[:,1] = transformer.transform(xyz[:,0], xyz[:,1])
+   
     points = vtk.vtkPoints()
     if ndim2 == 3:
         print("Surface output, assuming the grid is at z=0".center(column_size))
@@ -123,19 +127,20 @@ def setUp_grid_interpolation(coord_min, coord_max, dx, inputCRS):
   """
   
   # set up x and y coordinates
+  transformer = Transformer.from_crs(inputCRS, basicCRS, always_xy=True)
+  lon0, lat0 = transformer.transform(coord_min[0], coord_min[0])
+  lon1, lat1 = transformer.transform(coord_max[0], coord_max[0])
+
   x = np.arange(coord_min[0], coord_max[0] + dx, dx)
   y = np.arange(coord_min[1], coord_max[1] + dx, dx)
 
   z = np.array([0])   # ensure that the mesh is 2D
   xx, yy = np.meshgrid(x, y)
 
-  # project the x and y coordinates to lat/lon
-  x_proj, y_proj = project_coordinates(x, y, inputCRS)
-  
   # Create grid image volume
-  imageSize = [x.shape[0], y.shape[0], z.shape[0]]
-  imageOrigin = [coord_min[0], coord_min[1], coord_min[2]]
-  imageSpacing = [dx, dx, dx]
+  imageSize = [x.shape[0], y.shape[0]]
+  imageOrigin = [x[0], y[0]]
+  imageSpacing = [dx, dx]
   
   imageData = vtk.vtkImageData()
   imageData.SetDimensions(imageSize)
@@ -147,10 +152,10 @@ def setUp_grid_interpolation(coord_min, coord_max, dx, inputCRS):
 
   probeFilter.SetInputData(imageData)
   probeFilter.SpatialMatchOn()
-  
-  return probeFilter, xx.shape, x_proj, y_proj
 
+  return probeFilter, (y.shape[0], x.shape[0]), x, y 
 
+    
 
 def get_interpolation(sx, unstrGrid3d, probeFilter, projDataShape, timestep, varName):
   """
@@ -209,7 +214,7 @@ def interpolate_seissol2structured(sx, dx, coord_min, coord_max, inputCRS, inclu
   
   returns deformation data and coordinates
   """
-  unstrGrid3d = sx.generateVtkObject()
+  unstrGrid3d = sx.generateVtkObject(projection)
 
   nTime = sx.ReadNdt()  # number of time steps in the Seissol file
   
