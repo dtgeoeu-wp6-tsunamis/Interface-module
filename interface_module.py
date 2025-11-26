@@ -75,6 +75,7 @@ parser.add_argument("--resolution", help="spatial resolution for both horizontal
     default=0.0)
 parser.add_argument("--only_donor_domain", 
     help="handle to only use the domain given by the donor model; default: False", 
+    action="store_true",
     default=False)
 parser.add_argument("-f", "--filter", 
     help="filter for the deformation data where filter = none, kajiura; default: none",
@@ -87,6 +88,7 @@ parser.add_argument("-c", "--casename",
     default='src2waveOut')
 parser.add_argument("--include_horizontal_deformation", 
     help="horizontal deformation handle (for SeisSol)", 
+    action="store_true",
     default=False)
 
 args = parser.parse_args()
