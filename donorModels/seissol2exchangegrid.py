@@ -26,7 +26,10 @@ Contains the following functionalities:
 basicCRS = 'epsg:4326' # basic lat-lon coordinate system
 
 # Some definitions for a nice print on the terminal
-column_size = os.get_terminal_size().columns
+try:
+    column_size = os.get_terminal_size().columns
+except OSError:
+    column_size = 80  # fallback width
 asterisk_fill = "*" * column_size
 
 
