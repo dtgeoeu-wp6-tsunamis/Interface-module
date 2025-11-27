@@ -134,7 +134,7 @@ def setUp_grid_interpolation(coord_min, coord_max, dx, inputCRS):
   
   # Create grid image volume
   imageSize = [x.shape[0], y.shape[0], z.shape[0]]
-  imageOrigin = [coord_min[0], coord_min[1], coord_min[2]]
+  imageOrigin = [coord_min[0], coord_min[1], 0.0]
   imageSpacing = [dx, dx, dx]
   
   imageData = vtk.vtkImageData()
