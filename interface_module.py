@@ -52,7 +52,10 @@ import os
 #TODO: include functionality for parameter file ?
 
 # Some definitions for a nice print on the terminal
-column_size = os.get_terminal_size().columns
+try:
+    column_size = os.get_terminal_size().columns
+except OSError:
+    column_size = 80  # fallback width
 asterisk_fill = "*" * column_size
 
 
@@ -71,10 +74,11 @@ parser.add_argument(
     "-r", "--receiver",
     help="receiver model; hysea (all lower case)",
     default="hysea",)
-parser.add_argument("--resolution", help="spatial resolution for both horizontal directions (in m)", 
+parser.add_argument("--resolution", help="spatial resolution for both horizontal directions (in degree)",
     default=0.0)
 parser.add_argument("--only_donor_domain", 
     help="handle to only use the domain given by the donor model; default: False", 
+    action="store_true",
     default=False)
 parser.add_argument("-f", "--filter", 
     help="filter for the deformation data where filter = none, kajiura; default: none",
@@ -87,6 +91,7 @@ parser.add_argument("-c", "--casename",
     default='src2waveOut')
 parser.add_argument("--include_horizontal_deformation", 
     help="horizontal deformation handle (for SeisSol)", 
+    action="store_true",
     default=False)
 
 args = parser.parse_args()

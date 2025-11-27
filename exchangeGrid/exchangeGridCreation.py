@@ -17,7 +17,10 @@ Contains the following functionalities:
 """
 
 # Some definitions for a nice print on the terminal
-column_size = os.get_terminal_size().columns
+try:
+    column_size = os.get_terminal_size().columns
+except OSError:
+    column_size = 80  # fallback width
 asterisk_fill = "*" * column_size
 
 
@@ -57,38 +60,39 @@ def donor2bathyDomain(bathy_file, donor_x, donor_y, donor_deformation):
   new_Nx = int((bathy_x[-1] - bathy_x[0]) / dx) + 1
   new_Ny = int((bathy_y[-1] - bathy_y[0]) / dx) + 1
 
-  # Calculate indices at which the "old"/donor data will start and end on the "new"/exchange grid
-  donor_x_index_start = int((donor_x[0] - x_min)/dx)
-  donor_x_index_end = donor_x_index_start + len(donor_x)
-  donor_y_index_start = int((donor_y[0] - y_min)/dx)
-  donor_y_index_end = donor_y_index_start + len(donor_y)
-      
+  # Compute where donor[0] maps into the exchange grid (can be negative)
+  donor_x_index_start = int(np.round((donor_x[0] - x_min) / dx))
+  donor_x_index_end   = donor_x_index_start + len(donor_x)
+
+  donor_y_index_start = int(np.round((donor_y[0] - y_min) / dx))
+  donor_y_index_end   = donor_y_index_start + len(donor_y)
+
+  # Compute overlap (clamp into [0, new_Nx/new_Ny])
+  ex_x_start = max(0, donor_x_index_start)
+  ex_x_end   = min(new_Nx, donor_x_index_end)
+  ex_y_start = max(0, donor_y_index_start)
+  ex_y_end   = min(new_Ny, donor_y_index_end)
+
+  # Corresponding donor indices that overlap (slice indices into donor arrays)
+  donor_x_slice_start = max(0, -donor_x_index_start)
+  donor_x_slice_end   = donor_x_slice_start + (ex_x_end - ex_x_start)
+
+  donor_y_slice_start = max(0, -donor_y_index_start)
+  donor_y_slice_end   = donor_y_slice_start + (ex_y_end - ex_y_start)
+
   # Create new x-coordinate array
-  exchange_grid_x = np.zeros(new_Nx)
-  exchange_grid_x[donor_x_index_start:donor_x_index_end] = donor_x
-  
-  # Calculate the new coordinate points recursively from the donor coordinates
-  for idx in range(donor_x_index_start):
-    exchange_grid_x[donor_x_index_start-idx-1] = exchange_grid_x[donor_x_index_start-idx] - dx
-  for idx in range(new_Nx-donor_x_index_end):
-    exchange_grid_x[donor_x_index_end+idx] = exchange_grid_x[donor_x_index_end+idx-1] + dx
-    
-  # Create new y-coordinate array  
-  exchange_grid_y = np.zeros(new_Ny)
-  exchange_grid_y[donor_y_index_start:donor_y_index_end] = donor_y
-  
-  # Calculate the new coordinate points recursively from the donor coordinates
-  for idx in range(donor_y_index_start):
-    exchange_grid_y[donor_y_index_start-idx-1] = exchange_grid_y[donor_y_index_start-idx] - dx
-  for idx in range(new_Ny-donor_y_index_end):
-    exchange_grid_y[donor_y_index_end+idx] = exchange_grid_y[donor_y_index_end+idx-1] + dx
-    
+  exchange_grid_x = x_min + np.arange(new_Nx) * dx
+  exchange_grid_y = y_min + np.arange(new_Ny) * dx
+
   # Get number of deformation timesteps
   Ntime = np.shape(donor_deformation)[0] 
   
   # Create exchange grid deformation array and fill it with the "old"/donor data (with the indices as before)
   exchange_grid_deformation = np.zeros((Ntime, new_Ny, new_Nx))
-  exchange_grid_deformation[:, donor_y_index_start:donor_y_index_end, donor_x_index_start:donor_x_index_end] = donor_deformation
+  for t in range(Ntime):
+    exchange_grid_deformation[t, ex_y_start:ex_y_end, ex_x_start:ex_x_end] = \
+      donor_deformation[t][donor_y_slice_start:donor_y_slice_end,
+      donor_x_slice_start:donor_x_slice_end]
 
   stop = time.time()
   print(f"The interpolation took {stop - start} s\n".center(column_size))
