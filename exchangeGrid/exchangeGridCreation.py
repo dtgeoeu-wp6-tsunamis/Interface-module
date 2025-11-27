@@ -83,12 +83,14 @@ def donor2bathyDomain(bathy_file, donor_x, donor_y, donor_deformation):
 
   # Get number of deformation timesteps
   Ntime = np.shape(donor_deformation)[0] 
-  donor_deformation = np.asarray(donor_deformation)
-  truncated = donor_deformation[:, donor_y_slice_start:donor_y_slice_end, donor_x_slice_start:donor_x_slice_end]
   
   # Create exchange grid deformation array and fill it with the "old"/donor data (with the indices as before)
   exchange_grid_deformation = np.zeros((Ntime, new_Ny, new_Nx))
-  exchange_grid_deformation[:, donor_y_index_start:donor_y_index_end, donor_x_index_start:donor_x_index_end] = truncated
+  for t in range(Ntime):
+    exchange_grid_deformation[t, ex_y_start:ex_y_end, ex_x_start:ex_x_end] = \
+      donor_deformation[t][donor_y_slice_start:donor_y_slice_end,
+      donor_x_slice_start:donor_x_slice_end]
+
   stop = time.time()
   print(f"The interpolation took {stop - start} s\n".center(column_size))
   
