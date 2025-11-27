@@ -32,7 +32,7 @@ Arguments that need/can to be provided:
   * bathy_file                             name of the bathymetry file. Domain has to be larger compared to the domain from the donor model
   * --donor donor_model           where donor_model = seissol, shaltop, bingclaw (all lower case!) 
   * --projection projection_donor   projection parameters (in Proj4 format) for converting from Cartesian to geographic (lon, lat) coordinates
-  * --resolution resolution          (optional) spatial resolution the donor output will be interpolated to (will be used for both x- and y-coordinates; has to be provided in meters)
+  * --resolution resolution          (optional) spatial resolution the donor output will be interpolated to (will be used for both x- and y-coordinates; has to be provided in degrees)
   * --only_donor_domain          (optional) handle to only use the domain given by the donor model (False by default)
   * --receiver receiver_model     (optional) receiver model (as of now, only hysea is available)
   * --filter filter                          (optional) filter for the deformation data where filter = none, kajiura; default: none

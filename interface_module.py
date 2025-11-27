@@ -71,7 +71,7 @@ parser.add_argument(
     "-r", "--receiver",
     help="receiver model; hysea (all lower case)",
     default="hysea",)
-parser.add_argument("--resolution", help="spatial resolution for both horizontal directions (in m)", 
+parser.add_argument("--resolution", help="spatial resolution for both horizontal directions (in degree)",
     default=0.0)
 parser.add_argument("--only_donor_domain", 
     help="handle to only use the domain given by the donor model; default: False", 

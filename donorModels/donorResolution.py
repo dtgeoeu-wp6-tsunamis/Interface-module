@@ -12,31 +12,7 @@ Contains the following functionalities:
 """
 
 
-def get_bathyResolutionlnMeters(bathy_resolution, projection, xc, yc):
-  """
-  Convert a longitudinal bathymetry resolution (in degrees)
-  into meters using a local projection.
-
-  :param bathy_resolution: grid spacing in degrees (Δlon)
-  :param projection: projection string (e.g. "+proj=tmerc ...")
-  :param xc: center longitude
-  :param yc: center latitude
-  """
-  # Define CRS  
-  inputCRS = 'epsg:4326' # basic lat-lon coordinate system
-  
-  # Perform the transform
-  transformer = Transformer.from_crs(inputCRS, projection, always_xy=True)
-  # Transform two lon points at the same latitude
-  x1, y1 = transformer.transform(xc, yc)
-  x2, y2 = transformer.transform(xc + bathy_resolution, yc)
-
-  # Horizontal resolution in meters
-  return abs(x2 - x1)
-
-
-
-def donor_chooseResolution(spatial_resolution, bathy_file, projection):
+def donor_chooseResolution(spatial_resolution, bathy_file):
   """
   Checks whether the given spatial resolution (im m) is 0. If yes, uses the spatial resolution of the bathymetry
 
@@ -80,10 +56,7 @@ def donor_chooseResolution(spatial_resolution, bathy_file, projection):
     else: 
       raise ValueError("The provided bathymetry file has different resolutions for x- and y-coordinates. Please provide a bathymetry file that has the same resolution in both directions.")
 
-    lon_center = bathy_x[len(bathy_x)//2]
-    lat_center = bathy_y[len(bathy_y)//2]
-    bathy_resolution_meter = get_bathyResolutionlnMeters(bathy_resolution, projection, lon_center, lat_center)
-    return bathy_resolution_meter, bathy
+    return bathy_resolution, bathy
   
   else:
     return spatial_resolution, bathy
